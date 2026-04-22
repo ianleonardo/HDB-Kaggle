@@ -1,0 +1,4 @@
+.DS_Store
+.env
+submission/
+catboost_info/
