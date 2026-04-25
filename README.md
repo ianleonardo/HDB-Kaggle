@@ -6,13 +6,17 @@ Predicting Singapore HDB resale flat prices using an ensemble of three Optuna-tu
 
 ## Results
 
-| Validation Method | LightGBM | XGBoost | CatBoost | **Ensemble** |
-| ----------------- | -------- | ------- | -------- | ------------ |
-| 5-fold OOF        | 21,680   | 21,674  | 21,670   | **21,456**   |
+| Model | OOF RMSE | OOF MAPE | OOF R² |
+| ----- | -------- | -------- | ------ |
+| LightGBM | 21,598 | 3.51% | 0.9773 |
+| XGBoost | 21,624 | 3.51% | 0.9772 |
+| CatBoost | 21,511 | 3.50% | 0.9775 |
+| **Ensemble** (L=0.36, X=0.11, C=0.53) | **21,369** | **3.48%** | **0.9778** |
 
-- **MAPE ≈ 3.5%** — predictions are on average within SGD ~21,000 of the actual resale price
-- **R² ≈ 0.977** — the model explains 97.7% of the variance in resale prices
-- The 5-fold OOF result is the reliable estimate; the training set is used in full with no rows left out of evaluation
+- Predictions are on average within **SGD ~21,000** of the actual resale price
+- The model explains **97.8%** of the variance in resale prices
+- All numbers are 5-fold OOF — every row is evaluated by a model that never trained on it
+- Kaggle leaderboard score: **21,284** (public test set)
 
 ---
 
@@ -65,9 +69,9 @@ subject to  w₀ + w₁ + w₂ = 1
 
 | Split | LightGBM | XGBoost | CatBoost |
 | ----- | -------- | ------- | -------- |
-| 5-fold OOF | 0.32 | 0.23 | 0.45 |
+| 5-fold OOF (v14) | 0.36 | 0.11 | 0.53 |
 
-CatBoost consistently receives the highest weight (~0.45) — Optuna tuning gave it a slight edge. LightGBM and XGBoost contribute meaningful diversity (combined 55%).
+CatBoost receives the highest weight (0.53) — Optuna tuning gave it a consistent edge. XGBoost is down-weighted to 0.11, meaning LightGBM and CatBoost carry almost all the signal (89%); XGBoost still adds marginal diversity.
 
 ### Why Not Add Random Forest or Ridge?
 
@@ -195,7 +199,11 @@ Raw distances are **log-transformed** (`log1p`) to compress right-skewed distrib
 | Feature | Formula | Rationale |
 | ------- | ------- | --------- |
 | `school_quality` | `cutoff_point + affiliation × 10` | Secondary school selectivity is a known HDB price signal in popular districts |
-| `pri_school_quality` | `affiliation × 10 + 1/(distance + 1)` | Combines school prestige with proximity |
+| `pri_school_quality` | `pri_sch_affiliation × 10 + 1/(distance + 1)` | Combines school prestige with proximity |
+
+**`school_quality`** — `cutoff_point` is the minimum PSLE aggregate score for entry into the nearest secondary school; higher means a more selective school. `affiliation` is a binary flag for schools linked to a branded secondary (e.g. Nanyang Primary → Nanyang Girls' High). The `× 10` multiplier brings the binary flag into the same magnitude as the continuous cut-off score range (~4–25), so both terms contribute meaningfully.
+
+**`pri_school_quality`** — for primary schools, distance matters more than for secondary because Singapore's registration system grants priority admission to families within 1 km, directly linking proximity to admission chances. The proximity term `1/(distance + 1)` decays from 1.0 at the doorstep to near-zero beyond 100 m; the `+ 1` prevents division by zero. `affiliation × 10` again flags schools linked to a prestigious secondary pipeline.
 
 ### Dropped / Excluded Features
 
@@ -311,7 +319,7 @@ All three are computed from training-fold data only — the same leakage-free di
 | v11 | Leak-free target encoding (computed inside fold loop) | 21,461 |
 | v12 | Geohash spatial encoding (4 features) | 21,680 | 21,714
 | v13 | KD-tree replaces geohash (continuous, no boundary artefacts) | 21,456 | 21,396
-| **v14** | Dropped 31 low-importance features; 5-fold OOF only | 21,369 | 21,284
+| **v14** | Dropped 29 low-importance features; 5-fold OOF only | **21,369** | **21,284** |
 
 ---
 
