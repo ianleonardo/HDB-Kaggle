@@ -1,0 +1,145 @@
+Train : (150634, 77)
+Test  : (16735, 76)
+
+Base features (before encoding)         : 86
+Target-encoded columns added per fold   : ['town', 'planning_area']
+Spatial-encoded columns added per fold  : ['spatial_500m_te', 'spatial_2000m_te', 'spatial_500m_psm']
+Total features per fold                 : 91
+
+═════════════════════════════════════════════════════════════════
+Training A — 80/20 random split
+═════════════════════════════════════════════════════════════════
+  Computing spatial encodings (KD-tree)... done
+Train=120,507  Val=30,127  Features=91
+
+  LightGBM                                RMSE=    21,302  MAE=    15,410  MAPE=  3.51%  R²=0.9777
+  XGBoost                                 RMSE=    21,347  MAE=    15,427  MAPE=  3.51%  R²=0.9777
+  CatBoost                                RMSE=    21,379  MAE=    15,473  MAPE=  3.53%  R²=0.9776
+  Ensemble (L=0.42 X=0.17 C=0.41)         RMSE=    21,126  MAE=    15,272  MAPE=  3.48%  R²=0.9781
+
+═════════════════════════════════════════════════════════════════
+Training B — 5-fold OOF
+═════════════════════════════════════════════════════════════════
+
+  Fold 1/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 1                          RMSE=    21,339  MAE=    15,428  MAPE=  3.52%  R²=0.9777
+      XGB fold 1                          RMSE=    21,343  MAE=    15,413  MAPE=  3.51%  R²=0.9777
+      CAT fold 1                          RMSE=    21,368  MAE=    15,467  MAPE=  3.53%  R²=0.9776
+
+  Fold 2/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 2                          RMSE=    22,174  MAE=    15,662  MAPE=  3.54%  R²=0.9760
+      XGB fold 2                          RMSE=    22,132  MAE=    15,637  MAPE=  3.54%  R²=0.9761
+      CAT fold 2                          RMSE=    22,154  MAE=    15,703  MAPE=  3.56%  R²=0.9760
+
+  Fold 3/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 3                          RMSE=    21,490  MAE=    15,544  MAPE=  3.52%  R²=0.9776
+      XGB fold 3                          RMSE=    21,495  MAE=    15,503  MAPE=  3.51%  R²=0.9775
+      CAT fold 3                          RMSE=    21,463  MAE=    15,545  MAPE=  3.52%  R²=0.9776
+
+  Fold 4/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 4                          RMSE=    21,797  MAE=    15,569  MAPE=  3.51%  R²=0.9771
+      XGB fold 4                          RMSE=    21,790  MAE=    15,550  MAPE=  3.51%  R²=0.9772
+      CAT fold 4                          RMSE=    21,735  MAE=    15,602  MAPE=  3.53%  R²=0.9773
+
+  Fold 5/5  train=120,508  val=30,126
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 5                          RMSE=    21,615  MAE=    15,597  MAPE=  3.54%  R²=0.9772
+      XGB fold 5                          RMSE=    21,574  MAE=    15,570  MAPE=  3.54%  R²=0.9772
+      CAT fold 5                          RMSE=    21,553  MAE=    15,576  MAPE=  3.54%  R²=0.9773
+
+═════════════════════════════════════════════════════════════════
+Final Summary
+═════════════════════════════════════════════════════════════════
+
+  ── Training A (80/20, leakage-free) ──
+  LightGBM                                RMSE=    21,302  MAE=    15,410  MAPE=  3.51%  R²=0.9777
+  XGBoost                                 RMSE=    21,347  MAE=    15,427  MAPE=  3.51%  R²=0.9777
+  CatBoost                                RMSE=    21,379  MAE=    15,473  MAPE=  3.53%  R²=0.9776
+  Ensemble (L=0.42 X=0.17 C=0.41)         RMSE=    21,126  MAE=    15,272  MAPE=  3.48%  R²=0.9781
+
+  ── Training B (5-fold OOF, leakage-free) ──
+  LightGBM  (OOF)                         RMSE=    21,685  MAE=    15,560  MAPE=  3.53%  R²=0.9771
+  XGBoost   (OOF)                         RMSE=    21,669  MAE=    15,535  MAPE=  3.52%  R²=0.9771
+  CatBoost  (OOF)                         RMSE=    21,656  MAE=    15,579  MAPE=  3.54%  R²=0.9772
+  Ensemble  (L=0.30 X=0.24 C=0.46)        RMSE=    21,456  MAE=    15,400  MAPE=  3.50%  R²=0.9776
+
+  Ensemble RMSE — 80/20 : 21,126
+  Ensemble RMSE — 5-fold: 21,456
+═════════════════════════════════════════════════════════════════
+
+Submissions saved:
+  submission_v13_8020.csv   (80/20 split)
+  submission_v13_5fold.csv  (5-fold OOF  ← recommended)
+
+═════════════════════════════════════════════════════════════════
+Feature Importance — Training A (gain, normalised to %)
+═════════════════════════════════════════════════════════════════
+
+Top 30 features by mean gain across LGB / XGB / CAT:
+  Feature                                    LGB%    XGB%    CAT%   Mean%
+  ------------------------------------------------------------------
+  spatial_500m_psm                          19.49    9.89   19.17   16.18
+  year_completed_x_floor_area               26.17    9.96    9.70   15.28
+  flat_type_enc                              5.18   23.92    9.29   12.79
+  area_x_lease_rem                          15.09    4.24    9.53    9.62
+  floor_area_sqm                             5.46    4.53    8.15    6.04
+  spatial_500m_te                            4.46    3.30    1.53    3.10
+  Hawker_Within_2km                          2.99    4.03    1.91    2.98
+  tranc_period                               1.75    0.32    4.51    2.19
+  max_floor_lvl                              2.18    2.90    1.33    2.14
+  area_x_storey                              1.80    0.72    2.77    1.76
+  flat_model_enc                             0.63    1.34    2.37    1.44
+  town_te                                    0.65    2.95    0.44    1.35
+  planning_area_te                           0.79    2.57    0.54    1.30
+  mrt_latitude                               1.04    2.33    0.44    1.27
+  Hawker_Within_1km                          0.52    2.66    0.48    1.22
+  spatial_2000m_te                           1.00    2.16    0.50    1.22
+  lease_commence_date                        0.80    1.14    1.19    1.04
+  year_completed                             0.69    0.80    1.56    1.02
+  Tranc_Year                                 0.69    0.38    1.86    0.97
+  storey_x_lease_rem                         0.94    0.30    1.41    0.88
+  mrt_longitude                              0.28    1.77    0.54    0.86
+  Latitude                                   0.30    0.55    1.69    0.85
+  lease_remaining_years                      0.45    0.39    1.52    0.78
+  sec_sch_latitude                           0.31    1.26    0.77    0.78
+  pri_sch_latitude                           0.35    1.58    0.37    0.77
+  5room_sold                                 0.12    0.24    1.70    0.69
+  mrt_nearest_distance                       0.58    0.37    0.77    0.58
+  log_mrt_dist                               0.28    0.30    1.05    0.54
+  3room_sold                                 0.15    1.17    0.27    0.53
+  lease_remaining_pct                        0.17    0.39    0.91    0.49
+
+Low-importance features (mean gain < 0.10%) — 27 features:
+  Feature                                    LGB%    XGB%    CAT%   Mean%
+  ------------------------------------------------------------------
+  residential                                0.00    0.00    0.00    0.00
+  market_hawker                              0.00    0.00    0.00    0.00
+  other_room_rental                          0.00    0.01    0.00    0.00
+  2room_rental                               0.00    0.03    0.00    0.01
+  3room_rental                               0.00    0.03    0.00    0.01
+  multistorey_carpark                        0.00    0.04    0.00    0.01
+  studio_apartment_sold                      0.00    0.05    0.00    0.02
+  total_rental_units                         0.00    0.07    0.00    0.02
+  commercial                                 0.00    0.05    0.02    0.02
+  multigen_sold                              0.00    0.10    0.00    0.03
+  1room_sold                                 0.00    0.11    0.00    0.04
+  affiliation                                0.00    0.12    0.00    0.04
+  log_bus_dist                               0.03    0.04    0.11    0.06
+  pri_sch_affiliation                        0.01    0.17    0.02    0.06
+  is_bus_interchange                         0.00    0.17    0.02    0.06
+  bus_interchange                            0.01    0.17    0.02    0.07
+  1room_rental                               0.00    0.21    0.00    0.07
+  mrt_interchange                            0.01    0.19    0.01    0.07
+  month_sin                                  0.02    0.03    0.17    0.07
+  precinct_pavilion                          0.00    0.22    0.00    0.07
+  month_cos                                  0.02    0.03    0.20    0.08
+  Tranc_Month                                0.03    0.03    0.20    0.09
+  is_mrt_interchange                         0.00    0.22    0.03    0.09
+  log_pri_dist                               0.03    0.07    0.16    0.09
+  sold_ratio                                 0.00    0.27    0.00    0.09
+  log_sec_dist                               0.04    0.07    0.16    0.09
+  total_sold_units                           0.06    0.11    0.11    0.09
