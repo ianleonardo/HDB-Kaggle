@@ -1,0 +1,110 @@
+Train : (150634, 77)
+Test  : (16735, 76)
+
+Base features                : 57
+Target-encoded (per fold)   : ['town', 'planning_area']
+Static spatial (per fold)   : ['spatial_500m_te', 'spatial_2000m_te', 'spatial_500m_psm']
+Time-aware spatial (per fold): ['spatial_ta_500m_te', 'spatial_ta_2000m_te', 'spatial_ta_500m_psm']  [window=24 months]
+Total features per fold     : 65
+
+═════════════════════════════════════════════════════════════════
+Training — 5-fold OOF  (static + time-aware spatial, leak-free)
+═════════════════════════════════════════════════════════════════
+
+  Fold 1/5  train=120,507  val=30,127
+    Building KD-tree + static spatial encodings... done
+    Time-aware spatial encodings (window=24m)... done
+      LGB fold 1                              RMSE=    21,259  MAE=    15,368  MAPE=  3.50%  R²=0.9778
+      XGB fold 1                              RMSE=    21,305  MAE=    15,394  MAPE=  3.51%  R²=0.9777
+      CAT fold 1                              RMSE=    21,288  MAE=    15,381  MAPE=  3.51%  R²=0.9778
+
+  Fold 2/5  train=120,507  val=30,127
+    Building KD-tree + static spatial encodings... done
+    Time-aware spatial encodings (window=24m)... done
+      LGB fold 2                              RMSE=    22,075  MAE=    15,610  MAPE=  3.53%  R²=0.9762
+      XGB fold 2                              RMSE=    22,075  MAE=    15,609  MAPE=  3.53%  R²=0.9762
+      CAT fold 2                              RMSE=    22,006  MAE=    15,582  MAPE=  3.53%  R²=0.9763
+
+  Fold 3/5  train=120,507  val=30,127
+    Building KD-tree + static spatial encodings... done
+    Time-aware spatial encodings (window=24m)... done
+      LGB fold 3                              RMSE=    21,409  MAE=    15,481  MAPE=  3.51%  R²=0.9777
+      XGB fold 3                              RMSE=    21,436  MAE=    15,462  MAPE=  3.50%  R²=0.9777
+      CAT fold 3                              RMSE=    21,395  MAE=    15,445  MAPE=  3.50%  R²=0.9778
+
+  Fold 4/5  train=120,507  val=30,127
+    Building KD-tree + static spatial encodings... done
+    Time-aware spatial encodings (window=24m)... done
+      LGB fold 4                              RMSE=    21,732  MAE=    15,528  MAPE=  3.51%  R²=0.9773
+      XGB fold 4                              RMSE=    21,707  MAE=    15,500  MAPE=  3.50%  R²=0.9773
+      CAT fold 4                              RMSE=    21,618  MAE=    15,483  MAPE=  3.50%  R²=0.9775
+
+  Fold 5/5  train=120,508  val=30,126
+    Building KD-tree + static spatial encodings... done
+    Time-aware spatial encodings (window=24m)... done
+      LGB fold 5                              RMSE=    21,493  MAE=    15,518  MAPE=  3.53%  R²=0.9774
+      XGB fold 5                              RMSE=    21,493  MAE=    15,518  MAPE=  3.53%  R²=0.9774
+      CAT fold 5                              RMSE=    21,538  MAE=    15,503  MAPE=  3.53%  R²=0.9773
+
+═════════════════════════════════════════════════════════════════
+Final Summary
+═════════════════════════════════════════════════════════════════
+  LightGBM  (OOF)                             RMSE=    21,595  MAE=    15,501  MAPE=  3.52%  R²=0.9773
+  XGBoost   (OOF)                             RMSE=    21,605  MAE=    15,497  MAPE=  3.51%  R²=0.9773
+  CatBoost  (OOF)                             RMSE=    21,570  MAE=    15,479  MAPE=  3.51%  R²=0.9773
+  Ensemble  (L=0.33 X=0.22 C=0.45)            RMSE=    21,364  MAE=    15,325  MAPE=  3.48%  R²=0.9778
+
+  v15 ensemble OOF RMSE : 21,334
+  v16 ensemble OOF RMSE : 21,364  (↑ regressed by 30)
+═════════════════════════════════════════════════════════════════
+
+Submission saved: submission_v16_5fold.csv
+
+═════════════════════════════════════════════════════════════════
+Feature Importance — 5-fold average gain (normalised to %)
+═════════════════════════════════════════════════════════════════
+
+  Feature                                         LGB%    XGB%    CAT%   Mean%
+  -----------------------------------------------------------------------
+  flat_type_enc                                   4.04   34.41   12.07   16.84
+  year_completed_x_floor_area                    22.30    5.80    8.45   12.18
+  spatial_500m_psm                               15.36    6.61    8.01    9.99
+  area_x_lease_rem                               12.63    5.01   10.58    9.41
+  floor_area_sqm                                 10.06    4.88    8.80    7.91
+  spatial_ta_500m_psm [TA]                        8.15    3.34    9.90    7.13
+  Hawker_Within_2km                               1.53    6.63    1.72    3.29
+  area_x_storey                                   2.16    1.17    2.75    2.03
+  max_floor_lvl                                   2.42    1.72    1.57    1.90
+  spatial_500m_te                                 2.52    2.17    0.70    1.80
+  tranc_period                                    1.12    0.27    3.50    1.63
+  year_completed                                  0.81    1.37    2.28    1.49
+  spatial_ta_500m_te [TA]                         1.71    1.64    1.06    1.47
+  flat_model_enc                                  1.07    1.27    2.01    1.45
+  planning_area_te                                1.26    2.23    0.44    1.31
+  lease_commence_date                             0.85    1.35    1.58    1.26
+  5room_sold                                      0.56    0.22    2.83    1.20
+  mrt_latitude                                    0.69    1.61    0.65    0.98
+  Hawker_Within_1km                               0.42    1.77    0.69    0.96
+  3room_sold                                      0.48    1.92    0.33    0.91
+  town_te                                         0.97    1.26    0.45    0.90
+  sec_sch_latitude                                0.31    0.85    1.13    0.76
+  pri_sch_latitude                                0.39    0.90    0.94    0.74
+  storey_x_lease_rem                              0.91    0.32    0.98    0.74
+  Tranc_Year                                      0.51    0.38    1.21    0.70
+  4room_sold                                      0.47    0.45    1.06    0.66
+  accessibility_score                             0.42    0.26    1.18    0.62
+  bus_stop_latitude                               0.48    0.65    0.61    0.58
+  mrt_nearest_distance                            0.51    0.23    0.79    0.51
+  mrt_longitude                                   0.16    0.83    0.52    0.50
+  spatial_2000m_te                                0.25    0.48    0.56    0.43
+  lease_remaining_years                           0.51    0.28    0.42    0.40
+  exec_sold                                       0.19    0.81    0.15    0.38
+  pri_sch_longitude                               0.21    0.48    0.40    0.37
+  log_mrt_dist                                    0.17    0.25    0.67    0.36
+
+No features with mean gain < 0.10% — all features contribute.
+
+Time-aware spatial features summary:
+  spatial_ta_500m_te                   rank=13  mean=1.47%
+  spatial_ta_2000m_te                  rank=42  mean=0.30%
+  spatial_ta_500m_psm                  rank= 6  mean=7.13%

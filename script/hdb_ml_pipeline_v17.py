@@ -1,25 +1,28 @@
 """
-HDB Resale Price Prediction Pipeline — v14
-Models   : LightGBM · XGBoost · CatBoost (all Optuna-tuned)
+HDB Resale Price Prediction Pipeline — v17
+Models   : LightGBM · XGBoost · CatBoost (v15 Optuna params, 3-fold inner CV)
 Ensemble : Nelder-Mead weight optimisation on OOF predictions
-Output   : submission_v14_5fold.csv  — 5-fold OOF
+Output   : submission_v17_5fold.csv
 
-Changes vs v13
+Changes vs v15
 ──────────────
-1. 80/20 split removed — 5-fold OOF only (more reliable estimate, uses all data).
-2. 31 low-importance features dropped (identified from v13 feature importance):
-     • Rental unit counts      : 1room_rental … total_rental_units
-     • Unit mix sold counts    : 1room_sold, studio_apartment_sold, multigen_sold,
-                                  total_sold_units, sold_ratio
-     • Binary building flags   : residential, commercial, market_hawker,
-                                  multistorey_carpark, precinct_pavilion
-     • Duplicate interchange   : mrt_interchange, is_mrt_interchange,
-                                  bus_interchange, is_bus_interchange
-     • Month seasonality       : month_sin, month_cos, Tranc_Month
-     • School affiliation flags: affiliation, pri_sch_affiliation
-     • Log-distance duplicates : log_bus_dist, log_pri_dist, log_sec_dist
-     • Raw coordinates         : Latitude, Longitude  (absorbed by spatial encoding)
-3. Feature importance averaged across all 5 folds (more stable than a single split).
+1. Postal-code-level target encoding added.
+   `postal` uniquely identifies a single HDB block (Singapore 6-digit postal
+   codes are building-level). Encoding is computed inside each fold from
+   training rows only — same leakage-free discipline as town / planning_area.
+
+   Hierarchy of spatial granularity now encoded:
+     town_te          (~26 groups,  coarsest)
+     planning_area_te (~32 groups)
+     postal_te        (~9,125 groups, block-level — new)
+
+   Smoothing (k=10 sigmoid) shrinks the ~2,165 sparse postals (<10 txns)
+   toward global mean; well-sampled blocks (median 15 txns) are trusted fully.
+
+2. No time-aware spatial encoding (kept for a separate experiment in v16).
+   Static spatial features from v14/v15 are retained unchanged.
+
+3. Total features per fold: 63 (was 62 in v15).
 """
 
 import pandas as pd
@@ -36,7 +39,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # ══════════════════════════════════════════════════════════════════════════════
-# CONFIGURATION
+# CONFIGURATION — v15 best hyperparameters (3-fold inner CV, 50 trials each)
 # ══════════════════════════════════════════════════════════════════════════════
 
 LGB_PARAMS = {
@@ -47,13 +50,13 @@ LGB_PARAMS = {
     'verbose':           -1,
     'n_jobs':            -1,
     'random_state':      42,
-    'learning_rate':     0.010021172250241975,
-    'num_leaves':        323,
-    'min_child_samples': 43,
-    'feature_fraction':  0.5670125570814617,
-    'bagging_fraction':  0.8889351795009706,
-    'reg_alpha':         0.00017863857478743836,
-    'reg_lambda':        0.00038653010503709084,
+    'learning_rate':     0.015823133257513698,
+    'num_leaves':        179,
+    'min_child_samples': 127,
+    'feature_fraction':  0.45670099602309017,
+    'bagging_fraction':  0.9490340827010041,
+    'reg_alpha':         0.6354383365050222,
+    'reg_lambda':        2.880007754943537e-05,
 }
 
 XGB_PARAMS = {
@@ -63,14 +66,14 @@ XGB_PARAMS = {
     'tree_method':      'hist',
     'random_state':     42,
     'n_jobs':           -1,
-    'learning_rate':    0.010508405331770552,
+    'learning_rate':    0.016417030028739503,
     'max_depth':        10,
-    'min_child_weight': 10,
-    'subsample':        0.7072958782974688,
-    'colsample_bytree': 0.5050778304025615,
-    'reg_alpha':        0.00235824395321555,
-    'reg_lambda':       0.10765161235657794,
-    'gamma':            0.2758542525827162,
+    'min_child_weight': 24,
+    'subsample':        0.7049619167454984,
+    'colsample_bytree': 0.40012944717149146,
+    'reg_alpha':        2.145570496484021e-05,
+    'reg_lambda':       0.042439489227924364,
+    'gamma':            2.027027628519129,
 }
 
 CAT_PARAMS = {
@@ -81,50 +84,32 @@ CAT_PARAMS = {
     'verbose':             0,
     'random_seed':         42,
     'task_type':           'CPU',
-    'learning_rate':       0.0318637615066506,
+    'learning_rate':       0.03494303480441394,
     'depth':               10,
-    'l2_leaf_reg':         1.2695026389840243,
-    'random_strength':     1.540606655478695,
-    'bagging_temperature': 1.2874233422351384,
-    'border_count':        205,
+    'l2_leaf_reg':         0.032906695352702554,
+    'random_strength':     1.149913856504512,
+    'bagging_temperature': 0.935042332806602,
+    'border_count':        136,
 }
 
-TARGET_ENC_COLS = ['town', 'planning_area']
+# postal added — block-level granularity, leakage-free per fold
+TARGET_ENC_COLS = ['town', 'planning_area', 'postal']
 LABEL_ENC_COLS  = ['flat_type', 'flat_model', 'mrt_name', 'pri_sch_name', 'sec_sch_name']
-
-# Original redundant columns (dropped since v3)
-REDUNDANT_COLS = ['floor_area_sqft', 'hdb_age', 'lower', 'upper', 'mid']
-
-# Low-importance columns identified from v13 feature importance (mean gain < 0.10%)
-# plus raw coordinates now absorbed by spatial encoding
-LOW_IMP_COLS = [
-    # Rental unit counts
+REDUNDANT_COLS  = ['floor_area_sqft', 'hdb_age', 'lower', 'upper', 'mid']
+LOW_IMP_COLS    = [
     '1room_rental', '2room_rental', '3room_rental', 'other_room_rental',
-    'total_rental_units',
-    # Unit mix sold (redundant with flat_type)
     '1room_sold', 'studio_apartment_sold', 'multigen_sold',
-    'total_sold_units', 'sold_ratio',
-    # Binary building flags
     'residential', 'commercial', 'market_hawker',
     'multistorey_carpark', 'precinct_pavilion',
-    # Duplicate interchange flags (raw + binary version of same fact)
-    'mrt_interchange', 'is_mrt_interchange',
-    'bus_interchange',  'is_bus_interchange',
-    # Month seasonality (no price signal)
-    'month_sin', 'month_cos', 'Tranc_Month',
-    # School affiliation flags (weaker than school_quality composite)
+    'mrt_interchange', 'bus_interchange',
+    'Tranc_Month',
     'affiliation', 'pri_sch_affiliation',
-    # Log-distance duplicates (raw distance already in model)
-    'log_bus_dist', 'log_pri_dist', 'log_sec_dist',
-    # Raw coordinates (spatial encoding captures this more effectively)
     'Latitude', 'Longitude',
 ]
 
-# Spatial radius search — Singapore approximation
-# 1° lat ≈ 111 000 m,  1° lon ≈ 110 970 m  (cos 1.35° ≈ 0.9997)
 LAT_M   = 111_000.0
 LON_M   = 110_970.0
-RADII_M = [500, 2000]   # block-level and district-level
+RADII_M = [500, 2000]
 
 EARLY_STOP = 100
 N_FOLDS    = 5
@@ -140,7 +125,7 @@ def print_metrics(label, y_true, y_pred):
     mae  = mean_absolute_error(y_true, y_pred)
     mape = np.mean(np.abs((y_true - y_pred) / y_true)) * 100
     r2   = r2_score(y_true, y_pred)
-    print(f"  {label:<38}  RMSE={rmse:>10,.0f}  MAE={mae:>10,.0f}  MAPE={mape:>6.2f}%  R²={r2:.4f}")
+    print(f"  {label:<42}  RMSE={rmse:>10,.0f}  MAE={mae:>10,.0f}  MAPE={mape:>6.2f}%  R²={r2:.4f}")
 
 
 def optimise_weights(y_true, p1, p2, p3):
@@ -153,94 +138,66 @@ def optimise_weights(y_true, p1, p2, p3):
 
 
 def _smooth(count, grp_mean, global_mean, k=10):
-    """Sigmoid shrinkage toward global mean for small groups."""
     s = 1.0 / (1.0 + np.exp(-(count - k) / k))
     return global_mean * (1 - s) + grp_mean * s
 
 
 def _latlon_to_m(df):
-    """Convert Latitude/Longitude to approximate metres (flat-Earth, Singapore)."""
     return np.column_stack([
-        df['Latitude'].to_numpy()  * LAT_M,
+        df['Latitude'].to_numpy() * LAT_M,
         df['Longitude'].to_numpy() * LON_M,
     ])
 
 
 def target_encode_fold(df_tr, df_val, df_te, cols, target_col, k=10):
-    """
-    Leakage-free smoothed mean target encoding.
-    All statistics computed from df_tr only.
-    """
+    """Leakage-free smoothed mean target encoding — stats from df_tr only."""
     global_mean = df_tr[target_col].mean()
     tr_enc, val_enc, te_enc = {}, {}, {}
-
     for col in cols:
         agg    = df_tr.groupby(col)[target_col].agg(['mean', 'count'])
         smooth = 1.0 / (1.0 + np.exp(-(agg['count'] - k) / k))
         enc    = global_mean * (1 - smooth) + agg['mean'] * smooth
-
         tr_enc[col  + '_te'] = df_tr[col].map(enc).fillna(global_mean).to_numpy()
         val_enc[col + '_te'] = df_val[col].map(enc).fillna(global_mean).to_numpy()
         te_enc[col  + '_te'] = df_te[col].map(enc).fillna(global_mean).to_numpy()
-
     return tr_enc, val_enc, te_enc
 
 
-def spatial_radius_encode_fold(df_tr, df_val, df_te, target_col,
-                               radii_m=None, k=10):
-    """
-    Leakage-free continuous spatial encoding via KD-tree radius search.
-
-    KD-tree is built from training coordinates only.  For each point,
-    the smoothed mean price (and psm) of all training neighbours within
-    `radius` metres is computed.  No grid cells → no boundary artefacts.
-
-    Features produced:
-      spatial_{r}m_te  — smoothed mean price within r metres   (one per radius)
-      spatial_{r0}m_psm — smoothed mean price-per-sqm at finest radius
-    """
+def spatial_radius_encode_fold(df_tr, df_val, df_te, target_col, radii_m=None, k=10):
+    """Static spatial encoding — KD-tree built from df_tr only."""
     if radii_m is None:
         radii_m = RADII_M
-
     global_mean = df_tr[target_col].mean()
     prices_tr   = df_tr[target_col].to_numpy()
     psm_tr      = (df_tr[target_col] / df_tr['floor_area_sqm']).to_numpy()
     global_psm  = psm_tr.mean()
-
-    coords_tr  = _latlon_to_m(df_tr)
-    coords_val = _latlon_to_m(df_val)
-    coords_te  = _latlon_to_m(df_te)
-    tree       = cKDTree(coords_tr)
+    coords_tr   = _latlon_to_m(df_tr)
+    coords_val  = _latlon_to_m(df_val)
+    coords_te   = _latlon_to_m(df_te)
+    tree        = cKDTree(coords_tr)
 
     def _encode(query_coords, values_tr, global_val, radius):
-        neighbours = tree.query_ball_point(query_coords, r=radius, workers=-1)
-        out = np.empty(len(query_coords))
-        for i, nbr in enumerate(neighbours):
-            if len(nbr) == 0:
-                out[i] = global_val
-            else:
-                out[i] = _smooth(len(nbr), values_tr[nbr].mean(), global_val, k)
+        nbrs = tree.query_ball_point(query_coords, r=radius, workers=-1)
+        out  = np.empty(len(query_coords))
+        for i, n in enumerate(nbrs):
+            out[i] = global_val if len(n) == 0 else _smooth(len(n), values_tr[n].mean(), global_val, k)
         return out
 
     tr_enc, val_enc, te_enc = {}, {}, {}
-
     for r in radii_m:
         feat = f'spatial_{r}m_te'
         tr_enc[feat]  = _encode(coords_tr,  prices_tr, global_mean, r)
         val_enc[feat] = _encode(coords_val, prices_tr, global_mean, r)
         te_enc[feat]  = _encode(coords_te,  prices_tr, global_mean, r)
-
-    r0   = min(radii_m)
+    r0 = min(radii_m)
     feat = f'spatial_{r0}m_psm'
     tr_enc[feat]  = _encode(coords_tr,  psm_tr, global_psm, r0)
     val_enc[feat] = _encode(coords_val, psm_tr, global_psm, r0)
     te_enc[feat]  = _encode(coords_te,  psm_tr, global_psm, r0)
-
     return tr_enc, val_enc, te_enc
 
 
 def attach_encodings(X_base, enc_dict):
-    """Append encoding columns to a copy of X_base."""
     X = X_base.copy().reset_index(drop=True)
     for col, vals in enc_dict.items():
         X[col] = vals
@@ -277,7 +234,6 @@ def fit_cat(X_tr, y_tr, X_val, y_val):
 
 train_raw = pd.read_csv('../data/train.csv', low_memory=False)
 test_raw  = pd.read_csv('../data/test.csv',  low_memory=False)
-
 print(f"Train : {train_raw.shape}")
 print(f"Test  : {test_raw.shape}")
 
@@ -287,52 +243,30 @@ print(f"Test  : {test_raw.shape}")
 
 def feature_engineering(df, mall_dist_median):
     df = df.copy()
-
-    # Time
     df['lease_remaining_years'] = 99 - (df['Tranc_Year'] - df['lease_commence_date'])
     df['lease_remaining_pct']   = df['lease_remaining_years'] / 99.0
     df['tranc_period']          = df['Tranc_Year'] * 12 + df['Tranc_Month']
-
-    # Storey
-    df['storey_ratio']  = df['mid_storey'] / df['max_floor_lvl'].replace(0, np.nan)
-    df['is_high_floor'] = (df['mid_storey'] >= 20).astype(int)
-    df['floor_band']    = pd.cut(df['mid_storey'],
-                                 bins=[0, 5, 10, 15, 20, 30, 50, 999],
-                                 labels=[1, 2, 3, 4, 5, 6, 7]).astype(float)
-
-    # Distances
-    df['log_mrt_dist']    = np.log1p(df['mrt_nearest_distance'])
-    df['log_mall_dist']   = np.log1p(df['Mall_Nearest_Distance'].fillna(mall_dist_median))
-    df['log_hawker_dist'] = np.log1p(df['Hawker_Nearest_Distance'])
-    df['log_sec_dist']    = np.log1p(df['sec_sch_nearest_dist'])
-    df['accessibility_score'] = (
-        df['log_mrt_dist'] * 0.4 + df['log_mall_dist']   * 0.2 +
-        df['log_hawker_dist'] * 0.2
+    df['storey_ratio']          = df['mid_storey'] / df['max_floor_lvl'].replace(0, np.nan)
+    df['is_high_floor']         = (df['mid_storey'] >= 20).astype(int)
+    df['floor_band']            = pd.cut(df['mid_storey'],
+                                         bins=[0, 5, 10, 15, 20, 30, 50, 999],
+                                         labels=[1, 2, 3, 4, 5, 6, 7]).astype(float)
+    df['log_mrt_dist']          = np.log1p(df['mrt_nearest_distance'])
+    df['log_mall_dist']         = np.log1p(df['Mall_Nearest_Distance'].fillna(mall_dist_median))
+    df['log_hawker_dist']       = np.log1p(df['Hawker_Nearest_Distance'])
+    df['accessibility_score']   = (
+        df['log_mrt_dist'] * 0.4 + df['log_mall_dist'] * 0.2 + df['log_hawker_dist'] * 0.2
     )
-
     for col in ['Mall_Within_500m', 'Mall_Within_1km', 'Mall_Within_2km',
                 'Hawker_Within_500m', 'Hawker_Within_1km', 'Hawker_Within_2km']:
         df[col] = df[col].fillna(0)
-
-    # Building
-    df['total_sold_units']   = df[['1room_sold', '2room_sold', '3room_sold', '4room_sold',
-                                    '5room_sold', 'exec_sold', 'multigen_sold',
-                                    'studio_apartment_sold']].sum(axis=1)
-    df['total_rental_units'] = df[['1room_rental', '2room_rental',
-                                    '3room_rental', 'other_room_rental']].sum(axis=1)
-    df['sold_ratio']         = df['total_sold_units'] / df['total_dwelling_units'].replace(0, np.nan)
-
-    # School quality
-    df['school_quality']     = df['cutoff_point'].fillna(0) + df['affiliation'].fillna(0) * 10
-    df['pri_school_quality'] = (df['pri_sch_affiliation'].fillna(0) * 10
-                                + 1 / (df['pri_sch_nearest_distance'] + 1))
-
-    # Interactions
+    df['school_quality']              = df['cutoff_point'].fillna(0) + df['affiliation'].fillna(0) * 10
+    df['pri_school_quality']          = (df['pri_sch_affiliation'].fillna(0) * 10
+                                         + 1 / (df['pri_sch_nearest_distance'] + 1))
     df['area_x_storey']               = df['floor_area_sqm'] * df['mid_storey']
     df['area_x_lease_rem']            = df['floor_area_sqm'] * df['lease_remaining_years']
     df['storey_x_lease_rem']          = df['mid_storey']     * df['lease_remaining_years']
     df['year_completed_x_floor_area'] = df['year_completed'] * df['floor_area_sqm']
-
     return df
 
 
@@ -341,7 +275,7 @@ train_fe = feature_engineering(train_raw, mall_dist_median)
 test_fe  = feature_engineering(test_raw,  mall_dist_median)
 
 # ══════════════════════════════════════════════════════════════════════════════
-# LABEL ENCODING  (global — safe, target not involved)
+# LABEL ENCODING
 # ══════════════════════════════════════════════════════════════════════════════
 
 for col in LABEL_ENC_COLS:
@@ -359,37 +293,36 @@ for col in LABEL_ENC_COLS:
 DROP_COLS = [
     TARGET, ID_COL,
     'Tranc_YearMonth', 'block', 'street_name', 'address', 'storey_range',
-    'postal', 'bus_stop_name', 'full_flat_type',
+    'bus_stop_name', 'full_flat_type',
     *REDUNDANT_COLS,
     *LOW_IMP_COLS,
-    *TARGET_ENC_COLS,   # raw strings dropped; _te columns added per-fold
+    *TARGET_ENC_COLS,   # raw strings dropped; _te columns added per fold
     *LABEL_ENC_COLS,    # raw strings replaced by _enc columns
 ]
 
 BASE_FEATURES = [c for c in train_fe.columns if c not in DROP_COLS]
-
 SPATIAL_FEATS = [f'spatial_{r}m_te' for r in RADII_M] + \
                 [f'spatial_{min(RADII_M)}m_psm']
 n_total = len(BASE_FEATURES) + len(TARGET_ENC_COLS) + len(SPATIAL_FEATS)
 
-print(f"\nBase features (before encoding)         : {len(BASE_FEATURES)}")
-print(f"Target-encoded columns added per fold   : {TARGET_ENC_COLS}")
-print(f"Spatial-encoded columns added per fold  : {SPATIAL_FEATS}")
-print(f"Total features per fold                 : {n_total}")
-print(f"Dropped low-importance features         : {len(LOW_IMP_COLS)}")
+print(f"\nBase features                : {len(BASE_FEATURES)}")
+print(f"Target-encoded (per fold)   : {TARGET_ENC_COLS}")
+print(f"  postal unique groups      : {train_fe['postal'].nunique():,}  "
+      f"(median {train_fe.groupby('postal')[TARGET].count().median():.0f} txns/block)")
+print(f"Spatial-encoded (per fold)  : {SPATIAL_FEATS}")
+print(f"Total features per fold     : {n_total}")
 
 train_fe = train_fe.reset_index(drop=True)
 test_fe  = test_fe.reset_index(drop=True)
 y        = train_fe[TARGET]
-
 X_test_base = test_fe[BASE_FEATURES]
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TRAINING — 5-fold OOF  (leakage-free encoding per fold)
+# TRAINING — 5-fold OOF
 # ══════════════════════════════════════════════════════════════════════════════
 
 print("\n" + "═"*65)
-print(f"Training — {N_FOLDS}-fold OOF")
+print(f"Training — {N_FOLDS}-fold OOF  (leak-free encoding per fold)")
 print("═"*65)
 
 kf = KFold(n_splits=N_FOLDS, shuffle=True, random_state=42)
@@ -402,11 +335,10 @@ pred_lgb = np.zeros(len(test_fe))
 pred_xgb = np.zeros(len(test_fe))
 pred_cat = np.zeros(len(test_fe))
 
-# Accumulators for feature importance (averaged across folds)
 imp_lgb_folds = []
 imp_xgb_folds = []
 imp_cat_folds = []
-feature_names = None   # captured from first fold
+feature_names = None
 
 for fold, (tr_idx, val_idx) in enumerate(kf.split(np.arange(len(train_fe))), 1):
     print(f"\n  Fold {fold}/{N_FOLDS}  train={len(tr_idx):,}  val={len(val_idx):,}")
@@ -414,13 +346,13 @@ for fold, (tr_idx, val_idx) in enumerate(kf.split(np.arange(len(train_fe))), 1):
     df_tr_f  = train_fe.iloc[tr_idx]
     df_val_f = train_fe.iloc[val_idx]
 
-    # Target encoding — computed from this fold's training rows only
+    # Target encoding: town, planning_area, postal — all from training fold only
     tr_enc, val_enc, te_enc = target_encode_fold(
         df_tr=df_tr_f, df_val=df_val_f, df_te=test_fe,
         cols=TARGET_ENC_COLS, target_col=TARGET,
     )
 
-    # Spatial encoding — KD-tree from this fold's training coordinates only
+    # Spatial encoding
     print(f"    Computing spatial encodings (KD-tree)...", end=' ', flush=True)
     sp_tr, sp_val, sp_te = spatial_radius_encode_fold(
         df_tr=df_tr_f, df_val=df_val_f, df_te=test_fe, target_col=TARGET,
@@ -467,16 +399,21 @@ oof_blend = w[0]*oof_lgb + w[1]*oof_xgb + w[2]*oof_cat
 # FINAL SUMMARY
 # ══════════════════════════════════════════════════════════════════════════════
 
+V15_OOF_RMSE = 21_334
+
 print("\n" + "═"*65)
 print("Final Summary")
 print("═"*65)
-
 print_metrics("LightGBM  (OOF)", y, oof_lgb)
 print_metrics("XGBoost   (OOF)", y, oof_xgb)
 print_metrics("CatBoost  (OOF)", y, oof_cat)
-print_metrics(f"Ensemble  (L={w[0]:.2f} X={w[1]:.2f} C={w[2]:.2f})",
-              y, oof_blend)
-print(f"\n  Ensemble OOF RMSE : {root_mean_squared_error(y, oof_blend):,.0f}")
+print_metrics(f"Ensemble  (L={w[0]:.2f} X={w[1]:.2f} C={w[2]:.2f})", y, oof_blend)
+
+v17_rmse = root_mean_squared_error(y, oof_blend)
+delta    = V15_OOF_RMSE - v17_rmse
+print(f"\n  v15 ensemble OOF RMSE : {V15_OOF_RMSE:,}")
+print(f"  v17 ensemble OOF RMSE : {v17_rmse:,.0f}  "
+      f"({'↓ improved by ' + f'{delta:,.0f}' if delta > 0 else '↑ regressed by ' + f'{abs(delta):,.0f}'})")
 print("═"*65)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -484,16 +421,13 @@ print("═"*65)
 # ══════════════════════════════════════════════════════════════════════════════
 
 pred_final = w[0]*pred_lgb + w[1]*pred_xgb + w[2]*pred_cat
-
 pd.DataFrame({"Id": test_raw[ID_COL], "Predicted": pred_final}).to_csv(
-    '../submission/submission_v14_5fold.csv', index=False
+    '../submission/submission_v17_5fold.csv', index=False
 )
-print("\nSubmission saved: submission_v14_5fold.csv")
+print("\nSubmission saved: submission_v17_5fold.csv")
 
 # ══════════════════════════════════════════════════════════════════════════════
-# FEATURE IMPORTANCE  (gain averaged across all 5 folds)
-# Averaging over folds is more stable than a single split — each fold sees
-# a different 80% of the data, so fold-specific noise cancels out.
+# FEATURE IMPORTANCE
 # ══════════════════════════════════════════════════════════════════════════════
 
 print("\n" + "═"*65)
@@ -504,7 +438,6 @@ imp_lgb_arr = np.array(imp_lgb_folds).mean(axis=0)
 imp_xgb_arr = np.array(imp_xgb_folds).mean(axis=0)
 imp_cat_arr = np.array(imp_cat_folds).mean(axis=0)
 
-# Normalise each model's importance to sum to 100%
 imp_lgb_pct = 100 * imp_lgb_arr / imp_lgb_arr.sum()
 imp_xgb_pct = 100 * imp_xgb_arr / imp_xgb_arr.sum() if imp_xgb_arr.sum() > 0 else imp_xgb_arr
 imp_cat_pct = 100 * imp_cat_arr / imp_cat_arr.sum()
@@ -518,20 +451,24 @@ df_imp = pd.DataFrame({
 df_imp['mean_%'] = df_imp[['lgb_%', 'xgb_%', 'cat_%']].mean(axis=1)
 df_imp = df_imp.sort_values('mean_%', ascending=False).reset_index(drop=True)
 
-print("\nTop 30 features by mean gain (LGB / XGB / CAT):")
-print(f"  {'Feature':<40} {'LGB%':>6}  {'XGB%':>6}  {'CAT%':>6}  {'Mean%':>6}")
+print(f"\n  {'Feature':<40} {'LGB%':>6}  {'XGB%':>6}  {'CAT%':>6}  {'Mean%':>6}")
 print("  " + "-"*66)
-for _, row in df_imp.head(30).iterrows():
+for _, row in df_imp.head(35).iterrows():
     print(f"  {row['feature']:<40} {row['lgb_%']:>6.2f}  {row['xgb_%']:>6.2f}"
           f"  {row['cat_%']:>6.2f}  {row['mean_%']:>6.2f}")
 
 low = df_imp[df_imp['mean_%'] < 0.10].sort_values('mean_%')
 if len(low):
     print(f"\nLow-importance features (mean gain < 0.10%) — {len(low)} features:")
-    print(f"  {'Feature':<40} {'LGB%':>6}  {'XGB%':>6}  {'CAT%':>6}  {'Mean%':>6}")
-    print("  " + "-"*66)
     for _, row in low.iterrows():
         print(f"  {row['feature']:<40} {row['lgb_%']:>6.2f}  {row['xgb_%']:>6.2f}"
               f"  {row['cat_%']:>6.2f}  {row['mean_%']:>6.2f}")
 else:
     print("\nNo features with mean gain < 0.10% — all features contribute.")
+
+# Show where postal_te lands
+if 'postal_te' in df_imp['feature'].values:
+    row  = df_imp[df_imp['feature'] == 'postal_te'].iloc[0]
+    rank = df_imp[df_imp['feature'] == 'postal_te'].index[0] + 1
+    print(f"\npostal_te  →  rank {rank}  |  mean gain {row['mean_%']:.2f}%  "
+          f"(LGB {row['lgb_%']:.2f}%  XGB {row['xgb_%']:.2f}%  CAT {row['cat_%']:.2f}%)")

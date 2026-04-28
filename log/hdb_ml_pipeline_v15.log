@@ -1,0 +1,179 @@
+Train : (150634, 77)
+Test  : (16735, 76)
+
+Base features                : 57
+Target-encoded (per fold)   : ['town', 'planning_area']
+Spatial-encoded (per fold)  : ['spatial_500m_te', 'spatial_2000m_te', 'spatial_500m_psm']
+Total features per fold     : 62
+
+Pre-computing HPO proxy encodings (full training data)...
+  Building global KD-tree... done
+
+HPO proxy dataset: 62 features, 3-fold inner CV
+
+═════════════════════════════════════════════════════════════════
+Phase 1a — LightGBM HPO  (50 trials, 3-fold inner CV)
+═════════════════════════════════════════════════════════════════
+  0%|          | 0/50 [00:00<?, ?it/s]Best trial: 0. Best value: 22087.3:   0%|          | 0/50 [08:56<?, ?it/s]Best trial: 0. Best value: 22087.3:   2%|▏         | 1/50 [08:56<7:18:20, 536.74s/it]Best trial: 0. Best value: 22087.3:   2%|▏         | 1/50 [11:08<7:18:20, 536.74s/it]Best trial: 0. Best value: 22087.3:   4%|▍         | 2/50 [11:08<3:58:38, 298.30s/it]Best trial: 2. Best value: 21988.4:   4%|▍         | 2/50 [17:30<3:58:38, 298.30s/it]Best trial: 2. Best value: 21988.4:   6%|▌         | 3/50 [17:30<4:23:38, 336.57s/it]Best trial: 3. Best value: 21958.6:   6%|▌         | 3/50 [26:10<4:23:38, 336.57s/it]Best trial: 3. Best value: 21958.6:   8%|▊         | 4/50 [26:10<5:13:41, 409.16s/it]Best trial: 3. Best value: 21958.6:   8%|▊         | 4/50 [29:22<5:13:41, 409.16s/it]Best trial: 3. Best value: 21958.6:  10%|█         | 5/50 [29:22<4:08:13, 330.96s/it]Best trial: 3. Best value: 21958.6:  10%|█         | 5/50 [31:05<4:08:13, 330.96s/it]Best trial: 3. Best value: 21958.6:  12%|█▏        | 6/50 [31:05<3:05:45, 253.30s/it]Best trial: 3. Best value: 21958.6:  12%|█▏        | 6/50 [49:30<3:05:45, 253.30s/it]Best trial: 3. Best value: 21958.6:  14%|█▍        | 7/50 [49:30<6:21:10, 531.87s/it]Best trial: 3. Best value: 21958.6:  14%|█▍        | 7/50 [1:04:35<6:21:10, 531.87s/it]Best trial: 3. Best value: 21958.6:  16%|█▌        | 8/50 [1:04:35<7:35:15, 650.36s/it]Best trial: 3. Best value: 21958.6:  16%|█▌        | 8/50 [1:10:50<7:35:15, 650.36s/it]Best trial: 3. Best value: 21958.6:  18%|█▊        | 9/50 [1:10:50<6:25:42, 564.45s/it]Best trial: 9. Best value: 21794.9:  18%|█▊        | 9/50 [1:18:41<6:25:42, 564.45s/it]Best trial: 9. Best value: 21794.9:  20%|██        | 10/50 [1:18:41<5:57:02, 535.57s/it]Best trial: 9. Best value: 21794.9:  20%|██        | 10/50 [1:25:40<5:57:02, 535.57s/it]Best trial: 9. Best value: 21794.9:  22%|██▏       | 11/50 [1:25:40<5:24:59, 499.99s/it]Best trial: 9. Best value: 21794.9:  22%|██▏       | 11/50 [1:32:57<5:24:59, 499.99s/it]Best trial: 9. Best value: 21794.9:  24%|██▍       | 12/50 [1:32:57<5:04:28, 480.74s/it]Best trial: 9. Best value: 21794.9:  24%|██▍       | 12/50 [1:38:09<5:04:28, 480.74s/it]Best trial: 9. Best value: 21794.9:  26%|██▌       | 13/50 [1:38:09<4:24:59, 429.72s/it]Best trial: 9. Best value: 21794.9:  26%|██▌       | 13/50 [1:46:21<4:24:59, 429.72s/it]Best trial: 9. Best value: 21794.9:  28%|██▊       | 14/50 [1:46:21<4:29:00, 448.35s/it]Best trial: 9. Best value: 21794.9:  28%|██▊       | 14/50 [1:54:23<4:29:00, 448.35s/it]Best trial: 9. Best value: 21794.9:  30%|███       | 15/50 [1:54:23<4:27:27, 458.50s/it]Best trial: 9. Best value: 21794.9:  30%|███       | 15/50 [2:02:22<4:27:27, 458.50s/it]Best trial: 9. Best value: 21794.9:  32%|███▏      | 16/50 [2:02:22<4:23:17, 464.63s/it]Best trial: 9. Best value: 21794.9:  32%|███▏      | 16/50 [2:06:29<4:23:17, 464.63s/it]Best trial: 9. Best value: 21794.9:  34%|███▍      | 17/50 [2:06:29<3:39:39, 399.38s/it]Best trial: 9. Best value: 21794.9:  34%|███▍      | 17/50 [2:16:01<3:39:39, 399.38s/it]Best trial: 9. Best value: 21794.9:  36%|███▌      | 18/50 [2:16:01<4:00:41, 451.31s/it]Best trial: 9. Best value: 21794.9:  36%|███▌      | 18/50 [2:17:52<4:00:41, 451.31s/it]Best trial: 9. Best value: 21794.9:  38%|███▊      | 19/50 [2:17:52<3:00:15, 348.89s/it]Best trial: 9. Best value: 21794.9:  38%|███▊      | 19/50 [2:23:05<3:00:15, 348.89s/it]Best trial: 9. Best value: 21794.9:  40%|████      | 20/50 [2:23:05<2:49:08, 338.30s/it]Best trial: 9. Best value: 21794.9:  40%|████      | 20/50 [2:24:25<2:49:08, 338.30s/it]Best trial: 9. Best value: 21794.9:  42%|████▏     | 21/50 [2:24:25<2:05:59, 260.66s/it]Best trial: 9. Best value: 21794.9:  42%|████▏     | 21/50 [2:33:33<2:05:59, 260.66s/it]Best trial: 9. Best value: 21794.9:  44%|████▍     | 22/50 [2:33:33<2:41:49, 346.78s/it]Best trial: 9. Best value: 21794.9:  44%|████▍     | 22/50 [2:42:47<2:41:49, 346.78s/it]Best trial: 9. Best value: 21794.9:  46%|████▌     | 23/50 [2:42:47<3:04:07, 409.16s/it]Best trial: 9. Best value: 21794.9:  46%|████▌     | 23/50 [2:47:04<3:04:07, 409.16s/it]Best trial: 9. Best value: 21794.9:  48%|████▊     | 24/50 [2:47:04<2:37:31, 363.50s/it]Best trial: 9. Best value: 21794.9:  48%|████▊     | 24/50 [2:51:34<2:37:31, 363.50s/it]Best trial: 9. Best value: 21794.9:  50%|█████     | 25/50 [2:51:34<2:19:47, 335.49s/it]Best trial: 9. Best value: 21794.9:  50%|█████     | 25/50 [2:58:41<2:19:47, 335.49s/it]Best trial: 9. Best value: 21794.9:  52%|█████▏    | 26/50 [2:58:41<2:25:07, 362.80s/it]Best trial: 26. Best value: 21792.9:  52%|█████▏    | 26/50 [3:05:58<2:25:07, 362.80s/it]Best trial: 26. Best value: 21792.9:  54%|█████▍    | 27/50 [3:05:58<2:27:39, 385.18s/it]Best trial: 26. Best value: 21792.9:  54%|█████▍    | 27/50 [3:10:30<2:27:39, 385.18s/it]Best trial: 26. Best value: 21792.9:  56%|█████▌    | 28/50 [3:10:30<2:08:47, 351.23s/it]Best trial: 26. Best value: 21792.9:  56%|█████▌    | 28/50 [3:15:16<2:08:47, 351.23s/it]Best trial: 26. Best value: 21792.9:  58%|█████▊    | 29/50 [3:15:16<1:56:05, 331.69s/it]Best trial: 26. Best value: 21792.9:  58%|█████▊    | 29/50 [3:21:44<1:56:05, 331.69s/it]Best trial: 26. Best value: 21792.9:  60%|██████    | 30/50 [3:21:44<1:56:08, 348.43s/it]Best trial: 26. Best value: 21792.9:  60%|██████    | 30/50 [3:24:58<1:56:08, 348.43s/it]Best trial: 26. Best value: 21792.9:  62%|██████▏   | 31/50 [3:24:58<1:35:41, 302.21s/it]Best trial: 26. Best value: 21792.9:  62%|██████▏   | 31/50 [3:33:04<1:35:41, 302.21s/it]Best trial: 26. Best value: 21792.9:  64%|██████▍   | 32/50 [3:33:04<1:47:11, 357.32s/it]Best trial: 26. Best value: 21792.9:  64%|██████▍   | 32/50 [3:40:59<1:47:11, 357.32s/it]Best trial: 26. Best value: 21792.9:  66%|██████▌   | 33/50 [3:40:59<1:51:12, 392.50s/it]Best trial: 26. Best value: 21792.9:  66%|██████▌   | 33/50 [3:45:31<1:51:12, 392.50s/it]Best trial: 26. Best value: 21792.9:  68%|██████▊   | 34/50 [3:45:31<1:35:04, 356.53s/it]Best trial: 26. Best value: 21792.9:  68%|██████▊   | 34/50 [4:00:40<1:35:04, 356.53s/it]Best trial: 26. Best value: 21792.9:  70%|███████   | 35/50 [4:00:40<2:10:34, 522.27s/it]Best trial: 26. Best value: 21792.9:  70%|███████   | 35/50 [4:05:56<2:10:34, 522.27s/it]Best trial: 26. Best value: 21792.9:  72%|███████▏  | 36/50 [4:05:56<1:47:23, 460.25s/it]Best trial: 26. Best value: 21792.9:  72%|███████▏  | 36/50 [4:10:44<1:47:23, 460.25s/it]Best trial: 26. Best value: 21792.9:  74%|███████▍  | 37/50 [4:10:44<1:28:32, 408.62s/it]Best trial: 26. Best value: 21792.9:  74%|███████▍  | 37/50 [4:19:04<1:28:32, 408.62s/it]Best trial: 26. Best value: 21792.9:  76%|███████▌  | 38/50 [4:19:04<1:27:13, 436.08s/it]Best trial: 26. Best value: 21792.9:  76%|███████▌  | 38/50 [4:24:48<1:27:13, 436.08s/it]Best trial: 26. Best value: 21792.9:  78%|███████▊  | 39/50 [4:24:48<1:14:52, 408.40s/it]Best trial: 26. Best value: 21792.9:  78%|███████▊  | 39/50 [4:32:10<1:14:52, 408.40s/it]Best trial: 26. Best value: 21792.9:  80%|████████  | 40/50 [4:32:10<1:09:46, 418.61s/it]Best trial: 26. Best value: 21792.9:  80%|████████  | 40/50 [4:40:46<1:09:46, 418.61s/it]Best trial: 26. Best value: 21792.9:  82%|████████▏ | 41/50 [4:40:46<1:07:08, 447.61s/it]Best trial: 26. Best value: 21792.9:  82%|████████▏ | 41/50 [4:49:28<1:07:08, 447.61s/it]Best trial: 26. Best value: 21792.9:  84%|████████▍ | 42/50 [4:49:28<1:02:39, 470.00s/it]Best trial: 26. Best value: 21792.9:  84%|████████▍ | 42/50 [4:57:21<1:02:39, 470.00s/it]Best trial: 26. Best value: 21792.9:  86%|████████▌ | 43/50 [4:57:21<54:55, 470.78s/it]  Best trial: 26. Best value: 21792.9:  86%|████████▌ | 43/50 [5:05:09<54:55, 470.78s/it]Best trial: 26. Best value: 21792.9:  88%|████████▊ | 44/50 [5:05:09<47:00, 470.02s/it]Best trial: 26. Best value: 21792.9:  88%|████████▊ | 44/50 [5:12:05<47:00, 470.02s/it]Best trial: 26. Best value: 21792.9:  90%|█████████ | 45/50 [5:12:05<37:49, 453.92s/it]Best trial: 26. Best value: 21792.9:  90%|█████████ | 45/50 [5:19:52<37:49, 453.92s/it]Best trial: 26. Best value: 21792.9:  92%|█████████▏| 46/50 [5:19:52<30:31, 457.84s/it]Best trial: 26. Best value: 21792.9:  92%|█████████▏| 46/50 [5:23:26<30:31, 457.84s/it]Best trial: 26. Best value: 21792.9:  94%|█████████▍| 47/50 [5:23:26<19:14, 384.76s/it]Best trial: 26. Best value: 21792.9:  94%|█████████▍| 47/50 [5:28:21<19:14, 384.76s/it]Best trial: 26. Best value: 21792.9:  96%|█████████▌| 48/50 [5:28:21<11:55, 357.71s/it]Best trial: 26. Best value: 21792.9:  96%|█████████▌| 48/50 [5:33:54<11:55, 357.71s/it]Best trial: 26. Best value: 21792.9:  98%|█████████▊| 49/50 [5:33:54<05:50, 350.17s/it]Best trial: 26. Best value: 21792.9:  98%|█████████▊| 49/50 [5:39:06<05:50, 350.17s/it]Best trial: 26. Best value: 21792.9: 100%|██████████| 50/50 [5:39:06<00:00, 338.76s/it]Best trial: 26. Best value: 21792.9: 100%|██████████| 50/50 [5:39:06<00:00, 406.92s/it]
+
+Best LightGBM  (trial #26, 3-fold CV RMSE = 21,793):
+  learning_rate             = 0.015823133257513698
+  num_leaves                = 179
+  min_child_samples         = 127
+  feature_fraction          = 0.45670099602309017
+  bagging_fraction          = 0.9490340827010041
+  reg_alpha                 = 0.6354383365050222
+  reg_lambda                = 2.880007754943537e-05
+
+═════════════════════════════════════════════════════════════════
+Phase 1b — XGBoost HPO  (50 trials, 3-fold inner CV)
+═════════════════════════════════════════════════════════════════
+  0%|          | 0/50 [00:00<?, ?it/s]Best trial: 0. Best value: 21926.8:   0%|          | 0/50 [00:51<?, ?it/s]Best trial: 0. Best value: 21926.8:   2%|▏         | 1/50 [00:51<41:49, 51.22s/it]Best trial: 0. Best value: 21926.8:   2%|▏         | 1/50 [01:24<41:49, 51.22s/it]Best trial: 0. Best value: 21926.8:   4%|▍         | 2/50 [01:24<32:23, 40.50s/it]Best trial: 0. Best value: 21926.8:   4%|▍         | 2/50 [02:26<32:23, 40.50s/it]Best trial: 0. Best value: 21926.8:   6%|▌         | 3/50 [02:26<39:35, 50.53s/it]Best trial: 0. Best value: 21926.8:   6%|▌         | 3/50 [03:03<39:35, 50.53s/it]Best trial: 0. Best value: 21926.8:   8%|▊         | 4/50 [03:03<34:26, 44.93s/it]Best trial: 0. Best value: 21926.8:   8%|▊         | 4/50 [04:38<34:26, 44.93s/it]Best trial: 0. Best value: 21926.8:  10%|█         | 5/50 [04:38<47:28, 63.31s/it]Best trial: 0. Best value: 21926.8:  10%|█         | 5/50 [05:45<47:28, 63.31s/it]Best trial: 0. Best value: 21926.8:  12%|█▏        | 6/50 [05:45<47:13, 64.40s/it]Best trial: 0. Best value: 21926.8:  12%|█▏        | 6/50 [06:29<47:13, 64.40s/it]Best trial: 0. Best value: 21926.8:  14%|█▍        | 7/50 [06:29<41:28, 57.88s/it]Best trial: 0. Best value: 21926.8:  14%|█▍        | 7/50 [07:15<41:28, 57.88s/it]Best trial: 0. Best value: 21926.8:  16%|█▌        | 8/50 [07:15<37:46, 53.96s/it]Best trial: 0. Best value: 21926.8:  16%|█▌        | 8/50 [08:17<37:46, 53.96s/it]Best trial: 0. Best value: 21926.8:  18%|█▊        | 9/50 [08:17<38:32, 56.41s/it]Best trial: 0. Best value: 21926.8:  18%|█▊        | 9/50 [09:52<38:32, 56.41s/it]Best trial: 0. Best value: 21926.8:  20%|██        | 10/50 [09:52<45:34, 68.36s/it]Best trial: 0. Best value: 21926.8:  20%|██        | 10/50 [10:10<45:34, 68.36s/it]Best trial: 0. Best value: 21926.8:  22%|██▏       | 11/50 [10:10<34:25, 52.96s/it]Best trial: 0. Best value: 21926.8:  22%|██▏       | 11/50 [10:30<34:25, 52.96s/it]Best trial: 0. Best value: 21926.8:  24%|██▍       | 12/50 [10:30<27:07, 42.82s/it]Best trial: 12. Best value: 21918.7:  24%|██▍       | 12/50 [11:40<27:07, 42.82s/it]Best trial: 12. Best value: 21918.7:  26%|██▌       | 13/50 [11:40<31:32, 51.14s/it]Best trial: 13. Best value: 21862.9:  26%|██▌       | 13/50 [12:51<31:32, 51.14s/it]Best trial: 13. Best value: 21862.9:  28%|██▊       | 14/50 [12:51<34:16, 57.14s/it]Best trial: 13. Best value: 21862.9:  28%|██▊       | 14/50 [14:07<34:16, 57.14s/it]Best trial: 13. Best value: 21862.9:  30%|███       | 15/50 [14:07<36:37, 62.78s/it]Best trial: 13. Best value: 21862.9:  30%|███       | 15/50 [15:16<36:37, 62.78s/it]Best trial: 13. Best value: 21862.9:  32%|███▏      | 16/50 [15:16<36:41, 64.74s/it]Best trial: 13. Best value: 21862.9:  32%|███▏      | 16/50 [16:07<36:41, 64.74s/it]Best trial: 13. Best value: 21862.9:  34%|███▍      | 17/50 [16:07<33:24, 60.74s/it]Best trial: 13. Best value: 21862.9:  34%|███▍      | 17/50 [16:50<33:24, 60.74s/it]Best trial: 13. Best value: 21862.9:  36%|███▌      | 18/50 [16:50<29:33, 55.42s/it]Best trial: 13. Best value: 21862.9:  36%|███▌      | 18/50 [17:41<29:33, 55.42s/it]Best trial: 13. Best value: 21862.9:  38%|███▊      | 19/50 [17:41<27:50, 53.89s/it]Best trial: 13. Best value: 21862.9:  38%|███▊      | 19/50 [18:48<27:50, 53.89s/it]Best trial: 13. Best value: 21862.9:  40%|████      | 20/50 [18:48<28:58, 57.96s/it]Best trial: 13. Best value: 21862.9:  40%|████      | 20/50 [19:17<28:58, 57.96s/it]Best trial: 13. Best value: 21862.9:  42%|████▏     | 21/50 [19:17<23:47, 49.22s/it]Best trial: 13. Best value: 21862.9:  42%|████▏     | 21/50 [20:26<23:47, 49.22s/it]Best trial: 13. Best value: 21862.9:  44%|████▍     | 22/50 [20:26<25:44, 55.15s/it]Best trial: 13. Best value: 21862.9:  44%|████▍     | 22/50 [21:32<25:44, 55.15s/it]Best trial: 13. Best value: 21862.9:  46%|████▌     | 23/50 [21:32<26:18, 58.45s/it]Best trial: 13. Best value: 21862.9:  46%|████▌     | 23/50 [22:46<26:18, 58.45s/it]Best trial: 13. Best value: 21862.9:  48%|████▊     | 24/50 [22:46<27:18, 63.02s/it]Best trial: 13. Best value: 21862.9:  48%|████▊     | 24/50 [23:47<27:18, 63.02s/it]Best trial: 13. Best value: 21862.9:  50%|█████     | 25/50 [23:47<26:01, 62.44s/it]Best trial: 13. Best value: 21862.9:  50%|█████     | 25/50 [24:45<26:01, 62.44s/it]Best trial: 13. Best value: 21862.9:  52%|█████▏    | 26/50 [24:45<24:27, 61.16s/it]Best trial: 13. Best value: 21862.9:  52%|█████▏    | 26/50 [25:28<24:27, 61.16s/it]Best trial: 13. Best value: 21862.9:  54%|█████▍    | 27/50 [25:28<21:17, 55.54s/it]Best trial: 13. Best value: 21862.9:  54%|█████▍    | 27/50 [26:07<21:17, 55.54s/it]Best trial: 13. Best value: 21862.9:  56%|█████▌    | 28/50 [26:07<18:36, 50.76s/it]Best trial: 13. Best value: 21862.9:  56%|█████▌    | 28/50 [26:54<18:36, 50.76s/it]Best trial: 13. Best value: 21862.9:  58%|█████▊    | 29/50 [26:54<17:23, 49.67s/it]Best trial: 13. Best value: 21862.9:  58%|█████▊    | 29/50 [27:44<17:23, 49.67s/it]Best trial: 13. Best value: 21862.9:  60%|██████    | 30/50 [27:44<16:31, 49.55s/it]Best trial: 13. Best value: 21862.9:  60%|██████    | 30/50 [28:36<16:31, 49.55s/it]Best trial: 13. Best value: 21862.9:  62%|██████▏   | 31/50 [28:36<15:57, 50.39s/it]Best trial: 13. Best value: 21862.9:  62%|██████▏   | 31/50 [29:41<15:57, 50.39s/it]Best trial: 13. Best value: 21862.9:  64%|██████▍   | 32/50 [29:41<16:28, 54.90s/it]Best trial: 13. Best value: 21862.9:  64%|██████▍   | 32/50 [31:00<16:28, 54.90s/it]Best trial: 13. Best value: 21862.9:  66%|██████▌   | 33/50 [31:00<17:34, 62.04s/it]Best trial: 13. Best value: 21862.9:  66%|██████▌   | 33/50 [32:08<17:34, 62.04s/it]Best trial: 13. Best value: 21862.9:  68%|██████▊   | 34/50 [32:08<16:59, 63.70s/it]Best trial: 34. Best value: 21836.2:  68%|██████▊   | 34/50 [33:18<16:59, 63.70s/it]Best trial: 34. Best value: 21836.2:  70%|███████   | 35/50 [33:18<16:25, 65.69s/it]Best trial: 34. Best value: 21836.2:  70%|███████   | 35/50 [34:02<16:25, 65.69s/it]Best trial: 34. Best value: 21836.2:  72%|███████▏  | 36/50 [34:02<13:50, 59.29s/it]Best trial: 34. Best value: 21836.2:  72%|███████▏  | 36/50 [35:09<13:50, 59.29s/it]Best trial: 34. Best value: 21836.2:  74%|███████▍  | 37/50 [35:09<13:20, 61.57s/it]Best trial: 34. Best value: 21836.2:  74%|███████▍  | 37/50 [35:44<13:20, 61.57s/it]Best trial: 34. Best value: 21836.2:  76%|███████▌  | 38/50 [35:44<10:42, 53.53s/it]Best trial: 34. Best value: 21836.2:  76%|███████▌  | 38/50 [36:43<10:42, 53.53s/it]Best trial: 34. Best value: 21836.2:  78%|███████▊  | 39/50 [36:43<10:05, 55.09s/it]Best trial: 34. Best value: 21836.2:  78%|███████▊  | 39/50 [37:48<10:05, 55.09s/it]Best trial: 34. Best value: 21836.2:  80%|████████  | 40/50 [37:48<09:40, 58.09s/it]Best trial: 34. Best value: 21836.2:  80%|████████  | 40/50 [38:58<09:40, 58.09s/it]Best trial: 34. Best value: 21836.2:  82%|████████▏ | 41/50 [38:58<09:15, 61.69s/it]Best trial: 34. Best value: 21836.2:  82%|████████▏ | 41/50 [40:07<09:15, 61.69s/it]Best trial: 34. Best value: 21836.2:  84%|████████▍ | 42/50 [40:07<08:31, 63.90s/it]Best trial: 42. Best value: 21834.1:  84%|████████▍ | 42/50 [41:06<08:31, 63.90s/it]Best trial: 42. Best value: 21834.1:  86%|████████▌ | 43/50 [41:06<07:17, 62.55s/it]Best trial: 42. Best value: 21834.1:  86%|████████▌ | 43/50 [41:47<07:17, 62.55s/it]Best trial: 42. Best value: 21834.1:  88%|████████▊ | 44/50 [41:47<05:35, 55.96s/it]Best trial: 42. Best value: 21834.1:  88%|████████▊ | 44/50 [42:01<05:35, 55.96s/it]Best trial: 42. Best value: 21834.1:  90%|█████████ | 45/50 [42:01<03:37, 43.50s/it]Best trial: 42. Best value: 21834.1:  90%|█████████ | 45/50 [43:23<03:37, 43.50s/it]Best trial: 42. Best value: 21834.1:  92%|█████████▏| 46/50 [43:23<03:39, 54.97s/it]Best trial: 42. Best value: 21834.1:  92%|█████████▏| 46/50 [44:22<03:39, 54.97s/it]Best trial: 42. Best value: 21834.1:  94%|█████████▍| 47/50 [44:22<02:48, 56.28s/it]Best trial: 42. Best value: 21834.1:  94%|█████████▍| 47/50 [45:12<02:48, 56.28s/it]Best trial: 42. Best value: 21834.1:  96%|█████████▌| 48/50 [45:12<01:48, 54.18s/it]Best trial: 42. Best value: 21834.1:  96%|█████████▌| 48/50 [46:12<01:48, 54.18s/it]Best trial: 42. Best value: 21834.1:  98%|█████████▊| 49/50 [46:12<00:56, 56.11s/it]Best trial: 42. Best value: 21834.1:  98%|█████████▊| 49/50 [46:48<00:56, 56.11s/it]Best trial: 42. Best value: 21834.1: 100%|██████████| 50/50 [46:48<00:00, 50.08s/it]Best trial: 42. Best value: 21834.1: 100%|██████████| 50/50 [46:48<00:00, 56.18s/it]
+
+Best XGBoost  (trial #42, 3-fold CV RMSE = 21,834):
+  learning_rate             = 0.016417030028739503
+  max_depth                 = 10
+  min_child_weight          = 24
+  subsample                 = 0.7049619167454984
+  colsample_bytree          = 0.40012944717149146
+  reg_alpha                 = 2.145570496484021e-05
+  reg_lambda                = 0.042439489227924364
+  gamma                     = 2.027027628519129
+
+═════════════════════════════════════════════════════════════════
+Phase 1c — CatBoost HPO  (50 trials, 3-fold inner CV)
+═════════════════════════════════════════════════════════════════
+  0%|          | 0/50 [00:00<?, ?it/s]Best trial: 0. Best value: 22021.8:   0%|          | 0/50 [02:35<?, ?it/s]Best trial: 0. Best value: 22021.8:   2%|▏         | 1/50 [02:35<2:07:02, 155.56s/it]Best trial: 0. Best value: 22021.8:   2%|▏         | 1/50 [05:26<2:07:02, 155.56s/it]Best trial: 0. Best value: 22021.8:   4%|▍         | 2/50 [05:26<2:11:41, 164.61s/it]Best trial: 0. Best value: 22021.8:   4%|▍         | 2/50 [05:47<2:11:41, 164.61s/it]Best trial: 0. Best value: 22021.8:   6%|▌         | 3/50 [05:47<1:17:33, 99.02s/it] Best trial: 0. Best value: 22021.8:   6%|▌         | 3/50 [06:11<1:17:33, 99.02s/it]Best trial: 0. Best value: 22021.8:   8%|▊         | 4/50 [06:11<53:05, 69.26s/it]  Best trial: 4. Best value: 21997:   8%|▊         | 4/50 [07:46<53:05, 69.26s/it]  Best trial: 4. Best value: 21997:  10%|█         | 5/50 [07:46<59:05, 78.79s/it]Best trial: 4. Best value: 21997:  10%|█         | 5/50 [08:08<59:05, 78.79s/it]Best trial: 4. Best value: 21997:  12%|█▏        | 6/50 [08:08<43:28, 59.29s/it]Best trial: 4. Best value: 21997:  12%|█▏        | 6/50 [08:26<43:28, 59.29s/it]Best trial: 4. Best value: 21997:  14%|█▍        | 7/50 [08:26<32:50, 45.82s/it]Best trial: 4. Best value: 21997:  14%|█▍        | 7/50 [12:02<32:50, 45.82s/it]Best trial: 4. Best value: 21997:  16%|█▌        | 8/50 [12:02<1:09:58, 99.96s/it]Best trial: 4. Best value: 21997:  16%|█▌        | 8/50 [12:22<1:09:58, 99.96s/it]Best trial: 4. Best value: 21997:  18%|█▊        | 9/50 [12:22<51:22, 75.19s/it]  Best trial: 9. Best value: 21977.2:  18%|█▊        | 9/50 [14:14<51:22, 75.19s/it]Best trial: 9. Best value: 21977.2:  20%|██        | 10/50 [14:14<57:39, 86.50s/it]Best trial: 9. Best value: 21977.2:  20%|██        | 10/50 [14:41<57:39, 86.50s/it]Best trial: 9. Best value: 21977.2:  22%|██▏       | 11/50 [14:41<44:16, 68.11s/it]Best trial: 9. Best value: 21977.2:  22%|██▏       | 11/50 [15:37<44:16, 68.11s/it]Best trial: 9. Best value: 21977.2:  24%|██▍       | 12/50 [15:37<40:55, 64.62s/it]Best trial: 9. Best value: 21977.2:  24%|██▍       | 12/50 [16:08<40:55, 64.62s/it]Best trial: 9. Best value: 21977.2:  26%|██▌       | 13/50 [16:08<33:30, 54.34s/it]Best trial: 13. Best value: 21926.7:  26%|██▌       | 13/50 [17:16<33:30, 54.34s/it]Best trial: 13. Best value: 21926.7:  28%|██▊       | 14/50 [17:16<35:03, 58.42s/it]Best trial: 14. Best value: 21887.6:  28%|██▊       | 14/50 [17:51<35:03, 58.42s/it]Best trial: 14. Best value: 21887.6:  30%|███       | 15/50 [17:51<30:02, 51.49s/it]Best trial: 14. Best value: 21887.6:  30%|███       | 15/50 [18:26<30:02, 51.49s/it]Best trial: 14. Best value: 21887.6:  32%|███▏      | 16/50 [18:26<26:21, 46.50s/it]Best trial: 14. Best value: 21887.6:  32%|███▏      | 16/50 [18:58<26:21, 46.50s/it]Best trial: 14. Best value: 21887.6:  34%|███▍      | 17/50 [18:58<23:06, 42.02s/it]Best trial: 14. Best value: 21887.6:  34%|███▍      | 17/50 [19:32<23:06, 42.02s/it]Best trial: 14. Best value: 21887.6:  36%|███▌      | 18/50 [19:32<21:09, 39.66s/it]Best trial: 14. Best value: 21887.6:  36%|███▌      | 18/50 [20:02<21:09, 39.66s/it]Best trial: 14. Best value: 21887.6:  38%|███▊      | 19/50 [20:02<18:57, 36.70s/it]Best trial: 19. Best value: 21803.1:  38%|███▊      | 19/50 [20:56<18:57, 36.70s/it]Best trial: 19. Best value: 21803.1:  40%|████      | 20/50 [20:56<20:55, 41.86s/it]Best trial: 19. Best value: 21803.1:  40%|████      | 20/50 [21:49<20:55, 41.86s/it]Best trial: 19. Best value: 21803.1:  42%|████▏     | 21/50 [21:49<21:49, 45.17s/it]Best trial: 19. Best value: 21803.1:  42%|████▏     | 21/50 [22:42<21:49, 45.17s/it]Best trial: 19. Best value: 21803.1:  44%|████▍     | 22/50 [22:42<22:11, 47.55s/it]Best trial: 19. Best value: 21803.1:  44%|████▍     | 22/50 [23:35<22:11, 47.55s/it]Best trial: 19. Best value: 21803.1:  46%|████▌     | 23/50 [23:35<22:10, 49.26s/it]Best trial: 19. Best value: 21803.1:  46%|████▌     | 23/50 [24:09<22:10, 49.26s/it]Best trial: 19. Best value: 21803.1:  48%|████▊     | 24/50 [24:09<19:22, 44.72s/it]Best trial: 19. Best value: 21803.1:  48%|████▊     | 24/50 [25:56<19:22, 44.72s/it]Best trial: 19. Best value: 21803.1:  50%|█████     | 25/50 [25:56<26:28, 63.53s/it]Best trial: 19. Best value: 21803.1:  50%|█████     | 25/50 [26:49<26:28, 63.53s/it]Best trial: 19. Best value: 21803.1:  52%|█████▏    | 26/50 [26:49<24:03, 60.14s/it]Best trial: 19. Best value: 21803.1:  52%|█████▏    | 26/50 [27:19<24:03, 60.14s/it]Best trial: 19. Best value: 21803.1:  54%|█████▍    | 27/50 [27:19<19:36, 51.17s/it]Best trial: 19. Best value: 21803.1:  54%|█████▍    | 27/50 [28:11<19:36, 51.17s/it]Best trial: 19. Best value: 21803.1:  56%|█████▌    | 28/50 [28:11<18:53, 51.54s/it]Best trial: 19. Best value: 21803.1:  56%|█████▌    | 28/50 [30:40<18:53, 51.54s/it]Best trial: 19. Best value: 21803.1:  58%|█████▊    | 29/50 [30:40<28:16, 80.81s/it]Best trial: 19. Best value: 21803.1:  58%|█████▊    | 29/50 [31:35<28:16, 80.81s/it]Best trial: 19. Best value: 21803.1:  60%|██████    | 30/50 [31:35<24:16, 72.81s/it]Best trial: 19. Best value: 21803.1:  60%|██████    | 30/50 [32:03<24:16, 72.81s/it]Best trial: 19. Best value: 21803.1:  62%|██████▏   | 31/50 [32:03<18:52, 59.63s/it]Best trial: 19. Best value: 21803.1:  62%|██████▏   | 31/50 [32:55<18:52, 59.63s/it]Best trial: 19. Best value: 21803.1:  64%|██████▍   | 32/50 [32:55<17:12, 57.34s/it]Best trial: 19. Best value: 21803.1:  64%|██████▍   | 32/50 [34:33<17:12, 57.34s/it]Best trial: 19. Best value: 21803.1:  66%|██████▌   | 33/50 [34:33<19:40, 69.42s/it]Best trial: 19. Best value: 21803.1:  66%|██████▌   | 33/50 [35:49<19:40, 69.42s/it]Best trial: 19. Best value: 21803.1:  68%|██████▊   | 34/50 [35:49<19:01, 71.33s/it]Best trial: 19. Best value: 21803.1:  68%|██████▊   | 34/50 [38:20<19:01, 71.33s/it]Best trial: 19. Best value: 21803.1:  70%|███████   | 35/50 [38:20<23:51, 95.41s/it]Best trial: 19. Best value: 21803.1:  70%|███████   | 35/50 [41:08<23:51, 95.41s/it]Best trial: 19. Best value: 21803.1:  72%|███████▏  | 36/50 [41:08<27:17, 117.00s/it]Best trial: 19. Best value: 21803.1:  72%|███████▏  | 36/50 [41:47<27:17, 117.00s/it]Best trial: 19. Best value: 21803.1:  74%|███████▍  | 37/50 [41:47<20:17, 93.64s/it] Best trial: 37. Best value: 21788.9:  74%|███████▍  | 37/50 [43:18<20:17, 93.64s/it]Best trial: 37. Best value: 21788.9:  76%|███████▌  | 38/50 [43:18<18:35, 92.96s/it]Best trial: 37. Best value: 21788.9:  76%|███████▌  | 38/50 [44:54<18:35, 92.96s/it]Best trial: 37. Best value: 21788.9:  78%|███████▊  | 39/50 [44:54<17:12, 93.82s/it]Best trial: 37. Best value: 21788.9:  78%|███████▊  | 39/50 [46:52<17:12, 93.82s/it]Best trial: 37. Best value: 21788.9:  80%|████████  | 40/50 [46:52<16:48, 100.89s/it]Best trial: 37. Best value: 21788.9:  80%|████████  | 40/50 [47:46<16:48, 100.89s/it]Best trial: 37. Best value: 21788.9:  82%|████████▏ | 41/50 [47:46<13:03, 87.04s/it] Best trial: 37. Best value: 21788.9:  82%|████████▏ | 41/50 [48:36<13:03, 87.04s/it]Best trial: 37. Best value: 21788.9:  84%|████████▍ | 42/50 [48:36<10:05, 75.75s/it]Best trial: 37. Best value: 21788.9:  84%|████████▍ | 42/50 [50:12<10:05, 75.75s/it]Best trial: 37. Best value: 21788.9:  86%|████████▌ | 43/50 [50:12<09:33, 81.96s/it]Best trial: 37. Best value: 21788.9:  86%|████████▌ | 43/50 [51:02<09:33, 81.96s/it]Best trial: 37. Best value: 21788.9:  88%|████████▊ | 44/50 [51:02<07:14, 72.37s/it]Best trial: 37. Best value: 21788.9:  88%|████████▊ | 44/50 [52:35<07:14, 72.37s/it]Best trial: 37. Best value: 21788.9:  90%|█████████ | 45/50 [52:35<06:32, 78.43s/it]Best trial: 37. Best value: 21788.9:  90%|█████████ | 45/50 [53:42<06:32, 78.43s/it]Best trial: 37. Best value: 21788.9:  92%|█████████▏| 46/50 [53:42<05:00, 75.11s/it]Best trial: 37. Best value: 21788.9:  92%|█████████▏| 46/50 [54:18<05:00, 75.11s/it]Best trial: 37. Best value: 21788.9:  94%|█████████▍| 47/50 [54:18<03:10, 63.36s/it]Best trial: 37. Best value: 21788.9:  94%|█████████▍| 47/50 [55:08<03:10, 63.36s/it]Best trial: 37. Best value: 21788.9:  96%|█████████▌| 48/50 [55:08<01:58, 59.39s/it]Best trial: 37. Best value: 21788.9:  96%|█████████▌| 48/50 [55:27<01:58, 59.39s/it]Best trial: 37. Best value: 21788.9:  98%|█████████▊| 49/50 [55:27<00:47, 47.20s/it]Best trial: 37. Best value: 21788.9:  98%|█████████▊| 49/50 [57:05<00:47, 47.20s/it]Best trial: 37. Best value: 21788.9: 100%|██████████| 50/50 [57:05<00:00, 62.46s/it]Best trial: 37. Best value: 21788.9: 100%|██████████| 50/50 [57:05<00:00, 68.51s/it]
+
+Best CatBoost  (trial #37, 3-fold CV RMSE = 21,789):
+  learning_rate             = 0.03494303480441394
+  depth                     = 10
+  l2_leaf_reg               = 0.032906695352702554
+  random_strength           = 1.149913856504512
+  bagging_temperature       = 0.935042332806602
+  border_count              = 136
+
+═════════════════════════════════════════════════════════════════
+HPO Summary — 3-fold CV RMSE
+═════════════════════════════════════════════════════════════════
+
+  Model       v14 params (single-split HPO)   v15 params (3-fold HPO)
+  ────────────────────────────────────────────────────────────
+  LightGBM    val RMSE = (single split)        3-fold CV = 21,793
+  XGBoost     val RMSE = (single split)        3-fold CV = 21,834
+  CatBoost    val RMSE = (single split)        3-fold CV = 21,789
+
+  LightGBM params changed:
+    learning_rate                 0.010021  →  0.015823      ←
+    num_leaves                         323  →  179           ←
+    min_child_samples                   43  →  127           ←
+    feature_fraction                 0.567  →  0.456701      ←
+    bagging_fraction                0.8889  →  0.949034      ←
+    reg_alpha                     0.000179  →  0.635438      ←
+    reg_lambda                    0.000387  →  2.9e-05       ←
+
+  XGBoost params changed:
+    learning_rate                 0.010508  →  0.016417      ←
+    max_depth                           10  →  10          
+    min_child_weight                    10  →  24          
+    subsample                       0.7073  →  0.704962    
+    colsample_bytree                0.5051  →  0.400129      ←
+    reg_alpha                     0.002358  →  2.1e-05       ←
+    reg_lambda                     0.10765  →  0.042439      ←
+    gamma                           0.2759  →  2.027028      ←
+
+  CatBoost params changed:
+    learning_rate                 0.031864  →  0.034943      ←
+    depth                               10  →  10          
+    l2_leaf_reg                     1.2695  →  0.032907      ←
+    random_strength                 1.5406  →  1.149914      ←
+    bagging_temperature             1.2874  →  0.935042      ←
+    border_count                       205  →  136         
+
+═════════════════════════════════════════════════════════════════
+Phase 2 — Final 5-fold OOF  (leak-free encoding per fold)
+═════════════════════════════════════════════════════════════════
+
+  Fold 1/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 1                              RMSE=    21,189  MAE=    15,308  MAPE=  3.49%  R²=0.9780
+      XGB fold 1                              RMSE=    21,248  MAE=    15,370  MAPE=  3.51%  R²=0.9779
+      CAT fold 1                              RMSE=    21,241  MAE=    15,347  MAPE=  3.50%  R²=0.9779
+
+  Fold 2/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 2                              RMSE=    22,067  MAE=    15,577  MAPE=  3.53%  R²=0.9762
+      XGB fold 2                              RMSE=    22,051  MAE=    15,570  MAPE=  3.52%  R²=0.9763
+      CAT fold 2                              RMSE=    21,950  MAE=    15,540  MAPE=  3.52%  R²=0.9765
+
+  Fold 3/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 3                              RMSE=    21,342  MAE=    15,435  MAPE=  3.50%  R²=0.9779
+      XGB fold 3                              RMSE=    21,398  MAE=    15,457  MAPE=  3.50%  R²=0.9777
+      CAT fold 3                              RMSE=    21,354  MAE=    15,449  MAPE=  3.50%  R²=0.9778
+
+  Fold 4/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 4                              RMSE=    21,647  MAE=    15,500  MAPE=  3.50%  R²=0.9775
+      XGB fold 4                              RMSE=    21,742  MAE=    15,535  MAPE=  3.51%  R²=0.9773
+      CAT fold 4                              RMSE=    21,594  MAE=    15,475  MAPE=  3.50%  R²=0.9776
+
+  Fold 5/5  train=120,508  val=30,126
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 5                              RMSE=    21,441  MAE=    15,491  MAPE=  3.52%  R²=0.9775
+      XGB fold 5                              RMSE=    21,525  MAE=    15,537  MAPE=  3.53%  R²=0.9774
+      CAT fold 5                              RMSE=    21,525  MAE=    15,505  MAPE=  3.53%  R²=0.9774
+
+═════════════════════════════════════════════════════════════════
+Final Summary
+═════════════════════════════════════════════════════════════════
+  LightGBM  (OOF)                             RMSE=    21,539  MAE=    15,462  MAPE=  3.51%  R²=0.9774
+  XGBoost   (OOF)                             RMSE=    21,595  MAE=    15,494  MAPE=  3.51%  R²=0.9773
+  CatBoost  (OOF)                             RMSE=    21,534  MAE=    15,463  MAPE=  3.51%  R²=0.9774
+  Ensemble  (L=0.40 X=0.14 C=0.46)            RMSE=    21,334  MAE=    15,310  MAPE=  3.48%  R²=0.9778
+
+  v14 ensemble OOF RMSE : 21,369
+  v15 ensemble OOF RMSE : 21,334  (↓ improved by 35)
+═════════════════════════════════════════════════════════════════
+
+Submission saved: submission_v15_5fold.csv
+
+═════════════════════════════════════════════════════════════════
+Feature Importance — 5-fold average gain (normalised to %)
+═════════════════════════════════════════════════════════════════
+
+Top 30 features by mean gain (LGB / XGB / CAT):
+  Feature                                    LGB%    XGB%    CAT%   Mean%
+  ------------------------------------------------------------------
+  flat_type_enc                              5.46   24.10   10.71   13.42
+  spatial_500m_psm                          12.35    7.42   18.25   12.67
+  year_completed_x_floor_area               19.53    7.90    8.02   11.82
+  area_x_lease_rem                          16.40    4.26   11.47   10.71
+  floor_area_sqm                             6.03    3.45    7.40    5.62
+  Hawker_Within_2km                          5.26    5.37    1.97    4.20
+  spatial_500m_te                            6.42    3.60    1.34    3.78
+  planning_area_te                           2.00    6.30    0.54    2.95
+  area_x_storey                              2.37    1.15    2.85    2.12
+  tranc_period                               1.45    0.37    4.50    2.11
+  max_floor_lvl                              1.45    2.97    1.59    2.00
+  flat_model_enc                             1.07    2.17    1.97    1.74
+  mrt_latitude                               1.26    2.29    0.88    1.47
+  year_completed                             1.34    1.45    1.57    1.45
+  sec_sch_latitude                           0.55    2.14    1.23    1.31
+  5room_sold                                 0.64    0.63    2.54    1.27
+  Hawker_Within_1km                          0.78    2.39    0.60    1.26
+  town_te                                    1.29    2.03    0.45    1.26
+  Tranc_Year                                 0.93    0.44    2.02    1.13
+  3room_sold                                 0.89    1.95    0.39    1.08
+  lease_commence_date                        0.84    0.99    1.37    1.06
+  pri_sch_latitude                           0.62    1.84    0.68    1.05
+  lease_remaining_years                      1.00    0.37    1.30    0.89
+  storey_x_lease_rem                         1.01    0.33    1.08    0.81
+  mrt_longitude                              0.78    0.93    0.55    0.75
+  spatial_2000m_te                           1.31    0.31    0.60    0.74
+  4room_sold                                 0.55    0.52    1.04    0.70
+  accessibility_score                        0.58    0.29    1.16    0.68
+  pri_sch_longitude                          0.24    0.74    0.95    0.64
+  mrt_nearest_distance                       0.70    0.28    0.84    0.61
+
+No features with mean gain < 0.10% — all features contribute.

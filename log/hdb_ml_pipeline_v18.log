@@ -1,0 +1,101 @@
+Train : (150634, 77)
+Test  : (16735, 76)
+
+Base features                : 57
+Target-encoded (per fold)   : ['town', 'planning_area']
+Spatial-encoded (per fold)  : ['spatial_500m_te', 'spatial_1000m_te', 'spatial_2000m_te', 'spatial_500m_psm']
+Total features per fold     : 63
+
+═════════════════════════════════════════════════════════════════
+Training — 5-fold OOF  (leak-free encoding per fold)
+═════════════════════════════════════════════════════════════════
+
+  Fold 1/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 1                              RMSE=    21,218  MAE=    15,354  MAPE=  3.50%  R²=0.9779
+      XGB fold 1                              RMSE=    21,281  MAE=    15,382  MAPE=  3.51%  R²=0.9778
+      CAT fold 1                              RMSE=    21,219  MAE=    15,328  MAPE=  3.50%  R²=0.9779
+
+  Fold 2/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 2                              RMSE=    22,059  MAE=    15,562  MAPE=  3.52%  R²=0.9762
+      XGB fold 2                              RMSE=    22,093  MAE=    15,587  MAPE=  3.53%  R²=0.9762
+      CAT fold 2                              RMSE=    21,974  MAE=    15,541  MAPE=  3.52%  R²=0.9764
+
+  Fold 3/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 3                              RMSE=    21,349  MAE=    15,449  MAPE=  3.50%  R²=0.9779
+      XGB fold 3                              RMSE=    21,402  MAE=    15,449  MAPE=  3.50%  R²=0.9777
+      CAT fold 3                              RMSE=    21,295  MAE=    15,405  MAPE=  3.50%  R²=0.9780
+
+  Fold 4/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 4                              RMSE=    21,648  MAE=    15,485  MAPE=  3.50%  R²=0.9775
+      XGB fold 4                              RMSE=    21,735  MAE=    15,513  MAPE=  3.50%  R²=0.9773
+      CAT fold 4                              RMSE=    21,567  MAE=    15,477  MAPE=  3.50%  R²=0.9776
+
+  Fold 5/5  train=120,508  val=30,126
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 5                              RMSE=    21,432  MAE=    15,482  MAPE=  3.52%  R²=0.9775
+      XGB fold 5                              RMSE=    21,519  MAE=    15,526  MAPE=  3.53%  R²=0.9774
+      CAT fold 5                              RMSE=    21,555  MAE=    15,505  MAPE=  3.53%  R²=0.9773
+
+═════════════════════════════════════════════════════════════════
+Final Summary
+═════════════════════════════════════════════════════════════════
+  LightGBM  (OOF)                             RMSE=    21,543  MAE=    15,466  MAPE=  3.51%  R²=0.9774
+  XGBoost   (OOF)                             RMSE=    21,608  MAE=    15,491  MAPE=  3.51%  R²=0.9773
+  CatBoost  (OOF)                             RMSE=    21,524  MAE=    15,451  MAPE=  3.51%  R²=0.9774
+  Ensemble  (L=0.40 X=0.13 C=0.47)            RMSE=    21,334  MAE=    15,305  MAPE=  3.48%  R²=0.9778
+
+  v15 ensemble OOF RMSE : 21,334
+  v18 ensemble OOF RMSE : 21,334  (↓ improved by 0)
+═════════════════════════════════════════════════════════════════
+
+Submission saved: submission_v18_5fold.csv
+
+═════════════════════════════════════════════════════════════════
+Feature Importance — 5-fold average gain (normalised to %)
+═════════════════════════════════════════════════════════════════
+
+  Feature                                    LGB%    XGB%    CAT%   Mean%
+  ------------------------------------------------------------------
+  flat_type_enc                             10.46   24.94   10.32   15.24
+  spatial_500m_psm                          16.76    8.46   18.00   14.41
+  year_completed_x_floor_area               18.94    8.63   10.82   12.80
+  area_x_lease_rem                          12.94    4.37    9.62    8.97
+  floor_area_sqm                             7.11    4.16    6.65    5.97
+  spatial_500m_te                            4.44    4.32    1.51    3.42
+  planning_area_te                           1.83    6.60    0.51    2.98
+  Hawker_Within_2km                          2.34    3.16    1.80    2.43
+  max_floor_lvl                              2.15    3.07    1.59    2.27
+  tranc_period                               1.70    0.37    4.45    2.17
+  area_x_storey                              2.43    1.02    2.69    2.05
+  flat_model_enc                             0.77    1.91    2.18    1.62
+  lease_commence_date                        1.38    0.88    1.93    1.40
+  spatial_1000m_te                           2.15    1.46    0.43    1.35
+  town_te                                    0.99    2.55    0.40    1.31
+  mrt_latitude                               0.73    2.04    0.95    1.24
+  Hawker_Within_1km                          0.49    2.61    0.63    1.24
+  year_completed                             0.81    1.35    1.24    1.14
+  Tranc_Year                                 0.64    0.42    2.14    1.06
+  5room_sold                                 0.22    0.60    2.23    1.02
+  pri_sch_latitude                           0.56    1.64    0.53    0.91
+  sec_sch_latitude                           0.57    1.08    1.03    0.89
+  storey_x_lease_rem                         0.78    0.29    1.43    0.83
+  lease_remaining_years                      0.83    0.41    0.97    0.74
+  bus_stop_latitude                          0.86    0.52    0.73    0.70
+  accessibility_score                        0.50    0.34    1.15    0.66
+  exec_sold                                  0.35    1.42    0.21    0.66
+  mrt_longitude                              0.51    0.82    0.50    0.61
+  mrt_nearest_distance                       0.53    0.22    1.00    0.58
+  3room_sold                                 0.25    1.16    0.34    0.58
+  lease_remaining_pct                        0.22    0.52    0.90    0.55
+  4room_sold                                 0.18    0.49    0.90    0.52
+  spatial_2000m_te                           0.61    0.40    0.53    0.51
+  pri_sch_longitude                          0.23    0.65    0.52    0.47
+  bus_stop_longitude                         0.36    0.33    0.65    0.45
+
+No features with mean gain < 0.10% — all features contribute.
+
+spatial_1000m_te  →  rank 14  |  mean gain 1.35%  (LGB 2.15%  XGB 1.46%  CAT 0.43%)

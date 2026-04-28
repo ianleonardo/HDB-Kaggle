@@ -1,0 +1,74 @@
+Train : (150634, 77)
+Test  : (16735, 76)
+
+Base features                : 53
+Target-encoded (per fold)   : ['town', 'planning_area']
+Spatial-encoded (per fold)  : ['spatial_500m_te', 'spatial_2000m_te', 'spatial_500m_psm', 'spatial_2000m_psm']
+Total features per fold     : 59
+
+═════════════════════════════════════════════════════════════════
+Params — hardcoded from v19 Optuna (3-fold CV RMSE: LGB=21,777  XGB=21,808  CAT=21,793)
+═════════════════════════════════════════════════════════════════
+
+  LightGBM:
+    objective                 = regression
+    metric                    = rmse
+    verbose                   = -1
+    n_jobs                    = -1
+    random_state              = 42
+    bagging_freq              = 1
+    learning_rate             = 0.014089790573397976
+    num_leaves                = 230
+    min_child_samples         = 118
+    feature_fraction          = 0.40375527661427363
+    bagging_fraction          = 0.9777696606617974
+    reg_alpha                 = 0.0556273239722144
+    reg_lambda                = 0.0004285252521224354
+
+  XGBoost:
+    objective                 = reg:squarederror
+    eval_metric               = rmse
+    tree_method               = hist
+    random_state              = 42
+    n_jobs                    = -1
+    learning_rate             = 0.010741153512216828
+    max_depth                 = 11
+    min_child_weight          = 29
+    subsample                 = 0.6939185945889886
+    colsample_bytree          = 0.40265318949690715
+    reg_alpha                 = 0.009156494872927058
+    reg_lambda                = 0.011320917796794635
+    gamma                     = 2.6623939169044766
+
+  CatBoost:
+    loss_function             = RMSE
+    od_type                   = Iter
+    od_wait                   = 100
+    verbose                   = 0
+    random_seed               = 42
+    task_type                 = CPU
+    learning_rate             = 0.03689723463971788
+    depth                     = 9
+    l2_leaf_reg               = 0.04672450305870539
+    random_strength           = 0.7295014196914611
+    bagging_temperature       = 0.5812566288558311
+    border_count              = 192
+
+═════════════════════════════════════════════════════════════════
+Final 5-fold OOF  (leak-free encoding per fold)
+═════════════════════════════════════════════════════════════════
+
+  Fold 1/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 1                              RMSE=    21,163  MAE=    15,293  MAPE=  3.49%  R²=0.9780
+      XGB fold 1                              RMSE=    21,188  MAE=    15,318  MAPE=  3.49%  R²=0.9780
+      CAT fold 1                              RMSE=    21,223  MAE=    15,358  MAPE=  3.51%  R²=0.9779
+
+  Fold 2/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 2                              RMSE=    22,047  MAE=    15,546  MAPE=  3.52%  R²=0.9763
+      XGB fold 2                              RMSE=    22,028  MAE=    15,525  MAPE=  3.52%  R²=0.9763
+      CAT fold 2                              RMSE=    21,971  MAE=    15,515  MAPE=  3.52%  R²=0.9764
+
+  Fold 3/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... 

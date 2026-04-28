@@ -1,22 +1,22 @@
 # HDB Resale Price Prediction
 
-Predicting Singapore HDB resale flat prices using an ensemble of three Optuna-tuned gradient-boosted tree models with leakage-free spatial and categorical encoding.
+Predicting Singapore HDB resale flat prices using an ensemble of three gradient-boosted tree models with leakage-free spatial and categorical encoding. Hyperparameters tuned with Optuna (3-fold inner CV), evaluated on 5-fold out-of-fold predictions.
 
 ---
 
 ## Results
 
-| Model | OOF RMSE | OOF MAPE | OOF R² |
-| ----- | -------- | -------- | ------ |
-| LightGBM | 21,598 | 3.51% | 0.9773 |
-| XGBoost | 21,624 | 3.51% | 0.9772 |
-| CatBoost | 21,511 | 3.50% | 0.9775 |
-| **Ensemble** (L=0.36, X=0.11, C=0.53) | **21,369** | **3.48%** | **0.9778** |
+| Model | OOF RMSE | OOF MAE | OOF MAPE | OOF R² |
+| ----- | -------- | ------- | -------- | ------ |
+| LightGBM | 21,525 | 15,443 | 3.50% | 0.9774 |
+| XGBoost | 21,543 | 15,441 | 3.50% | 0.9774 |
+| CatBoost | 21,531 | 15,448 | 3.51% | 0.9774 |
+| **Ensemble** (L=0.38, X=0.18, C=0.45) | **21,325** | **15,292** | **3.47%** | **0.9779** |
 
-- Predictions are on average within **SGD ~21,000** of the actual resale price
+- Predictions are on average within **SGD ~15,300** of the actual resale price (MAE)
 - The model explains **97.8%** of the variance in resale prices
 - All numbers are 5-fold OOF — every row is evaluated by a model that never trained on it
-- Kaggle leaderboard score: **21,284** (public test set)
+- Kaggle leaderboard score: **21,225** (public test set, v20)
 
 ---
 
@@ -36,7 +36,7 @@ GBDTs are the industry-standard choice for structured/tabular prediction problem
 | Captures non-linear interactions | Floor × lease remaining, storey ratio × area — trees find these automatically |
 | Native NaN handling | Several distance and school features have missing values |
 
-Neural networks were considered but ruled out: on tabular datasets of this size (~150k rows, ~100 features), GBDTs consistently outperform them in both accuracy and training speed.
+Neural networks were considered but ruled out: on tabular datasets of this size (~150k rows, ~60 features), GBDTs consistently outperform them in both accuracy and training speed.
 
 ### Why These Three Specifically?
 
@@ -56,7 +56,7 @@ All three are GBDT variants, but each uses different regularisation and tree-bui
 
 A single model's prediction errors on individual rows are partly random. When two models disagree on a row, averaging them tends to be closer to the truth than either alone — provided the errors are not perfectly correlated.
 
-The three models share the same features but differ in tree growth algorithm, regularisation mechanism, and subsampling strategy, giving genuine diversity confirmed by the ensemble consistently beating all individual models.
+The three models share the same features but differ in tree growth algorithm, regularisation mechanism, and subsampling strategy, giving genuine diversity confirmed by the ensemble consistently beating all individual models by ~200 RMSE points.
 
 ### How the Ensemble Works
 
@@ -67,11 +67,11 @@ minimise RMSE( y_true,  w₀·pred_lgb + w₁·pred_xgb + w₂·pred_cat )
 subject to  w₀ + w₁ + w₂ = 1
 ```
 
-| Split | LightGBM | XGBoost | CatBoost |
-| ----- | -------- | ------- | -------- |
-| 5-fold OOF (v14) | 0.36 | 0.11 | 0.53 |
+| Version | LightGBM | XGBoost | CatBoost |
+| ------- | -------- | ------- | -------- |
+| v20 (current) | 0.38 | 0.18 | 0.45 |
 
-CatBoost receives the highest weight (0.53) — Optuna tuning gave it a consistent edge. XGBoost is down-weighted to 0.11, meaning LightGBM and CatBoost carry almost all the signal (89%); XGBoost still adds marginal diversity.
+CatBoost receives the highest weight — its ordered boosting gives it a consistent edge. All three contribute meaningfully; Nelder-Mead converges to non-trivial weights for each.
 
 ### Why Not Add Random Forest or Ridge?
 
@@ -106,53 +106,51 @@ Target encoding and spatial encoding are both **recomputed inside each fold** us
 
 All three models were tuned using **Optuna** with the **TPE (Tree-structured Parzen Estimator)** sampler — a Bayesian optimisation method that builds a probabilistic model of the objective function and samples promising regions rather than searching randomly.
 
-**Strategy:** single 80/20 inner split for each trial (fast proxy), then best params applied to full 5-fold OOF for honest final evaluation. 50 trials per model.
+**Strategy (v15+):** 3-fold inner CV for each Optuna trial (more stable than single 80/20 split), 50 trials per model. Best params hardcoded into production scripts. v20 uses params from the v19 Optuna run.
 
 ### LightGBM
 
-| Parameter | Default | Tuned | Role |
-| --------- | ------- | ----- | ---- |
-| `learning_rate` | 0.05 | **0.010** | Smaller steps with 5000 estimators; better generalisation |
-| `num_leaves` | 255 | **323** | More leaves → finer splits; leaf-wise growth uses this directly |
-| `min_child_samples` | 20 | **43** | Minimum samples per leaf; prevents overfitting on sparse splits |
-| `feature_fraction` | 0.80 | **0.567** | Column subsampling per tree; reduces correlation between trees |
-| `bagging_fraction` | 0.80 | **0.889** | Row subsampling per iteration |
-| `reg_alpha` | 0.10 | **0.00018** | L1 regularisation; nearly off — data is large enough |
-| `reg_lambda` | 0.10 | **0.00039** | L2 regularisation; same conclusion |
+| Parameter | Tuned | Role |
+| --------- | ----- | ---- |
+| `learning_rate` | **0.0141** | Slow learning with 5000 estimators; better generalisation |
+| `num_leaves` | **230** | Controls tree complexity; leaf-wise growth uses this directly |
+| `min_child_samples` | **118** | Minimum samples per leaf; prevents overfitting on sparse splits |
+| `feature_fraction` | **0.404** | Column subsampling per tree; reduces correlation between trees |
+| `bagging_fraction` | **0.978** | Row subsampling per iteration |
+| `reg_alpha` | **0.056** | L1 regularisation |
+| `reg_lambda` | **0.00043** | L2 regularisation |
 
 ### XGBoost
 
-| Parameter | Default | Tuned | Role |
-| --------- | ------- | ----- | ---- |
-| `learning_rate` | 0.05 | **0.0105** | Slower learning; consistent with LGB finding |
-| `max_depth` | 8 | **10** | Deeper trees capture more complex interactions |
-| `min_child_weight` | 5 | **10** | Minimum sum of instance weight in a child; controls overfitting |
-| `subsample` | 0.80 | **0.707** | Row subsampling fraction |
-| `colsample_bytree` | 0.80 | **0.505** | Column subsampling fraction |
-| `reg_alpha` | 0.10 | **0.0024** | L1 penalty |
-| `reg_lambda` | 1.00 | **0.108** | L2 penalty; reduced — large dataset tolerates less shrinkage |
-| `gamma` | 0 | **0.276** | Minimum loss reduction to make a split; acts as a pruning threshold |
+| Parameter | Tuned | Role |
+| --------- | ----- | ---- |
+| `learning_rate` | **0.0107** | Consistent with LGB finding — slow + deep |
+| `max_depth` | **11** | Deeper trees capture more complex interactions |
+| `min_child_weight` | **29** | Minimum sum of instance weight in a child; controls overfitting |
+| `subsample` | **0.694** | Row subsampling fraction |
+| `colsample_bytree` | **0.403** | Column subsampling fraction |
+| `reg_alpha` | **0.0092** | L1 penalty |
+| `reg_lambda` | **0.0113** | L2 penalty |
+| `gamma` | **2.662** | Minimum loss reduction to make a split; strong pruning threshold |
 
 ### CatBoost
 
-| Parameter | Default | Tuned | Role |
-| --------- | ------- | ----- | ---- |
-| `learning_rate` | 0.05 | **0.032** | Slower learning with 5000 iterations |
-| `depth` | 8 | **10** | Deeper trees; CatBoost uses symmetric trees so depth is costly but expressive |
-| `l2_leaf_reg` | 3 | **1.27** | L2 regularisation on leaf weights |
-| `random_strength` | 1 | **1.54** | Randomness in split scoring; more exploration |
-| `bagging_temperature` | 1 | **1.29** | Controls variance of bootstrap weights (Bayesian bootstrap) |
-| `border_count` | 128 | **205** | Number of candidate split points per feature |
+| Parameter | Tuned | Role |
+| --------- | ----- | ---- |
+| `learning_rate` | **0.0369** | Slower learning with 5000 iterations |
+| `depth` | **9** | Symmetric tree depth; shallower than XGB but each level is full-width |
+| `l2_leaf_reg` | **0.047** | L2 regularisation on leaf weights |
+| `random_strength` | **0.730** | Randomness in split scoring |
+| `bagging_temperature` | **0.581** | Controls variance of bootstrap weights (Bayesian bootstrap) |
+| `border_count` | **192** | Number of candidate split points per feature |
 
-A warm-start follow-up extended `depth` to 12 and ran 20 more trials from the optimum — confirmed convergence with no improvement.
-
-Both LGB and XGB settled on `lr ≈ 0.01` with `n_estimators=5000` + early stopping. This is a common Optuna finding: lower learning rates generalise better when compute allows.
+Both LGB and XGB settled on `lr ≈ 0.01` with `n_estimators=5000` + early stopping — a common Optuna finding: lower learning rates generalise better when compute allows.
 
 ---
 
 ## Feature Engineering
 
-150,634 transactions were transformed into a richer feature set grouped below by type.
+150,634 transactions were transformed into a richer feature set grouped below by type. **59 features total per fold** (53 base + 2 target-encoded + 4 spatial).
 
 ### Time Features
 
@@ -162,28 +160,28 @@ Both LGB and XGB settled on `lr ≈ 0.01` with `n_estimators=5000` + early stopp
 | `lease_remaining_pct` | `lease_remaining_years / 99` | Normalised version; easier for the model to compare across flat ages |
 | `tranc_period` | `year × 12 + month` | Monotone time index capturing overall market trend |
 
-Month (`Tranc_Month`) and cyclical features (`month_sin`, `month_cos`) were dropped in v14 after feature importance analysis showed no price signal.
+`Tranc_Month` dropped — no seasonal price signal detected.
 
 ### Storey / Floor Features
 
 | Feature | Formula | Rationale |
 | ------- | ------- | --------- |
 | `storey_ratio` | `mid_storey / max_floor_lvl` | Relative height matters more than absolute floor — floor 10 in a 12-storey block is high; in a 40-storey block it is not |
-| `is_high_floor` | `mid_storey ≥ 20` | Binary premium flag; high floors command a discrete price jump in Singapore |
-| `floor_band` | Binned storey (7 bands) | Ordinal compression of storey into price-relevant bands |
+| `floor_band` | Binned storey (7 bands: 1–5, 6–10, 11–15, 16–20, 21–30, 31–50, 51+) | Ordinal compression of storey into price-relevant bands |
 
 ### Distance / Accessibility Features
 
-Raw distances are **log-transformed** (`log1p`) to compress right-skewed distributions — the difference between 100 m and 200 m matters far more than the difference between 2,000 m and 2,100 m.
+Raw distances are **log-transformed** (`log1p`) to compress right-skewed distributions — the difference between 100 m and 200 m matters far more than the difference between 2,000 m and 2,100 m. All six raw distance columns are dropped in favour of their log versions.
 
-| Feature | Rationale |
-| ------- | --------- |
-| `log_mrt_dist` | MRT proximity is the single strongest price driver in Singapore |
-| `log_mall_dist` | Retail accessibility |
-| `log_hawker_dist` | Hawker centres are a cultural amenity unique to Singapore |
-| `accessibility_score` | Weighted composite: `0.4×MRT + 0.2×mall + 0.2×hawker` — single summary of overall connectivity |
-
-`log_bus_dist`, `log_pri_dist`, and `log_sec_dist` were dropped in v14 (low feature importance).
+| Feature | Replaces | Rationale |
+| ------- | -------- | --------- |
+| `log_mrt_dist` | `mrt_nearest_distance` | MRT proximity is the single strongest price driver in Singapore |
+| `log_mall_dist` | `Mall_Nearest_Distance` | Retail accessibility |
+| `log_hawker_dist` | `Hawker_Nearest_Distance` | Hawker centres are a cultural amenity unique to Singapore |
+| `log_bus_dist` | `bus_stop_nearest_distance` | Transit granularity beyond MRT |
+| `log_pri_sch_dist` | `pri_sch_nearest_distance` | Primary school proximity affects registration priority |
+| `log_sec_sch_dist` | `sec_sch_nearest_dist` | Secondary school proximity |
+| `accessibility_score` | — | Weighted composite: `0.4×MRT + 0.2×mall + 0.2×hawker` |
 
 ### Interaction Features
 
@@ -199,26 +197,44 @@ Raw distances are **log-transformed** (`log1p`) to compress right-skewed distrib
 | Feature | Formula | Rationale |
 | ------- | ------- | --------- |
 | `school_quality` | `cutoff_point + affiliation × 10` | Secondary school selectivity is a known HDB price signal in popular districts |
-| `pri_school_quality` | `pri_sch_affiliation × 10 + 1/(distance + 1)` | Combines school prestige with proximity |
+| `pri_school_quality` | `pri_sch_affiliation × 10 + 1/(pri_sch_nearest_distance + 1)` | Combines school prestige with proximity |
 
-**`school_quality`** — `cutoff_point` is the minimum PSLE aggregate score for entry into the nearest secondary school; higher means a more selective school. `affiliation` is a binary flag for schools linked to a branded secondary (e.g. Nanyang Primary → Nanyang Girls' High). The `× 10` multiplier brings the binary flag into the same magnitude as the continuous cut-off score range (~4–25), so both terms contribute meaningfully.
+**`school_quality`** — `cutoff_point` is the minimum PSLE aggregate for entry into the nearest secondary school; higher means more selective. `affiliation` is a binary flag for branded secondary pipeline schools (e.g. Nanyang Primary → Nanyang Girls' High). The `× 10` multiplier brings the binary flag into the same magnitude as the cut-off score range (~4–25).
 
-**`pri_school_quality`** — for primary schools, distance matters more than for secondary because Singapore's registration system grants priority admission to families within 1 km, directly linking proximity to admission chances. The proximity term `1/(distance + 1)` decays from 1.0 at the doorstep to near-zero beyond 100 m; the `+ 1` prevents division by zero. `affiliation × 10` again flags schools linked to a prestigious secondary pipeline.
+**`pri_school_quality`** — primary school distance matters more than secondary because Singapore's registration system grants priority admission to families within 1 km. The proximity term `1/(distance + 1)` decays from 1.0 at the doorstep to near-zero beyond a few hundred metres; `affiliation × 10` flags schools with a prestigious secondary pipeline.
+
+### Feature Importance (v20, 5-fold average gain)
+
+Top features by mean gain across all three models:
+
+| Rank | Feature | Mean% | LGB% | XGB% | CAT% |
+| ---- | ------- | ----- | ---- | ---- | ---- |
+| 1 | `flat_type_enc` | 14.48 | 7.74 | 24.39 | 11.30 |
+| 2 | `area_x_lease_rem` | 11.07 | 14.32 | 5.95 | 12.93 |
+| 3 | `spatial_500m_psm` | 11.03 | 13.21 | 6.41 | 13.47 |
+| 4 | `year_completed_x_floor_area` | 10.92 | 17.64 | 8.01 | 7.11 |
+| 5 | `spatial_2000m_psm` | 6.97 | 6.10 | 6.66 | 8.13 |
+| 6 | `floor_area_sqm` | 6.94 | 8.91 | 4.33 | 7.56 |
+| 7 | `spatial_500m_te` | 3.10 | 4.15 | 2.62 | 2.54 |
+| 8 | `Hawker_Within_2km` | 2.41 | 1.57 | 4.91 | 0.77 |
+| 9 | `area_x_storey` | 2.24 | 2.47 | 1.31 | 2.95 |
+| 10 | `tranc_period` | 2.03 | 1.80 | 0.40 | 3.87 |
+
+Spatial PSM features (price-per-sqm within 500 m and 2000 m) rank 3rd and 5th — capturing neighbourhood size-normalised price is highly predictive.
 
 ### Dropped / Excluded Features
-
-PCA analysis identified redundant pairs; v14 feature importance removed additional low-signal features:
 
 | Dropped | Reason |
 | ------- | ------ |
 | `floor_area_sqft` | Exact unit conversion of `floor_area_sqm` (r = 1.0) |
 | `hdb_age` | Near-perfect negative of `year_completed` |
 | `lower`, `upper`, `mid` | `mid_storey = (lower + upper) / 2`; `mid` is identical |
+| 6 raw distance columns | Replaced by log-transformed versions |
 | Rental unit counts (`1room_rental`, …) | Mean gain < 0.10% across all models |
 | Unit mix sold counts (`1room_sold`, …) | Redundant with `flat_type` |
 | Binary building flags (`residential`, `commercial`, …) | No price signal |
-| `month_sin`, `month_cos`, `Tranc_Month` | No seasonal price signal detected |
-| `Latitude`, `Longitude` | Raw coordinates absorbed by spatial encoding (still used internally) |
+| `Tranc_Month` | No seasonal price signal detected |
+| `Latitude`, `Longitude` | Raw coordinates absorbed by spatial encoding (used internally for KD-tree) |
 
 ---
 
@@ -233,9 +249,9 @@ encoded = global_mean × (1 − s) + group_mean × s
 where  s = sigmoid(count − 10)   ← shrinks small groups toward global mean
 ```
 
-#### Why It Is Leak-Free
+#### Why It Is Leak-Free (Val/Test)
 
-The critical implementation detail is **when** the encoding statistics are computed. In the final pipeline (v11+), encoding is done **inside the fold loop**:
+The critical implementation detail is **when** the encoding statistics are computed. Encoding is done **inside the fold loop**:
 
 ```python
 # Inside each fold:
@@ -247,17 +263,26 @@ global_mean = df_tr_fold['resale_price'].mean()
 enc = df_tr_fold.groupby('town')['resale_price'].agg(['mean', 'count'])
 # ... apply smoothing ...
 
-# Validation rows are mapped to training statistics — never contributed their own price
+# Validation rows mapped to training statistics — never contributed their own price
 df_val_fold['town_te'] = df_val_fold['town'].map(enc).fillna(global_mean)
 ```
 
-Each fold's validation rows are predicted using encoding statistics that were computed without them. The test set is also mapped to training-fold statistics only. No row's price ever leaks into its own encoding.
+Each fold's validation rows are predicted using encoding statistics computed without them. The test set is also mapped to training-fold statistics only.
 
-The earlier `final.py` version computed encoding on the full training set before splitting, which was a subtle leak: validation rows' own prices contributed to their town's encoding. v11 closed this gap.
+#### Train-Fold Self-Leakage
+
+A subtler form of leakage exists on the **training side**: when applying the encoding back to `df_tr_fold`, each row's own target value contributed to `enc[its_category]`. This is sometimes called train-fold self-leakage or self-inclusion bias.
+
+For this dataset the practical impact is negligible:
+- For `town` and `planning_area`, groups typically have hundreds to thousands of transactions. Each individual row contributes ~1/N to its own encoded value — at N=1000 that is 0.1% influence.
+- Sigmoid smoothing (k=10) already shrinks rare groups toward the global mean, which further reduces the effect.
+- The same pattern exists in spatial encoding: when building KD-tree encodings for training rows, each point's own price is included among its neighbours. At 500 m radius in Singapore, a point typically has 50–500 neighbours, so self-inclusion adds ~0.2–2% bias.
+
+The **OOF RMSE is unaffected** — it measures validation performance, which is computed clean. The training-side bias causes a small degree of optimism in training fit but does not propagate into the validation metric. The correct fix (leave-one-out encoding) adds implementation complexity for negligible gain at this group size.
 
 ### Label Encoding — `flat_type`, `flat_model`, `mrt_name`, `pri_sch_name`, `sec_sch_name`
 
-Label encoding assigns integer indices to each category. Because the target is not involved, this is computed globally (fitting on train + test combined to handle unseen categories) and is safe at all times. Used here because all three tree models handle ordinal integers natively and it is simpler than one-hot for high-cardinality columns.
+Label encoding assigns integer indices to each category. Because the target is not involved, this is computed globally (fitting on train + test combined to handle unseen categories) and is safe at all times. Used here because all three tree models handle ordinal integers natively.
 
 ---
 
@@ -267,7 +292,7 @@ Label encoding assigns integer indices to each category. Because the target is n
 
 **v12** introduced geohash spatial encoding: each transaction is assigned to a geohash cell (~150 m × 150 m at precision 7) and the smoothed mean price of all transactions in that cell is used as a feature.
 
-The problem is the **cell boundary discontinuity**. Geohash divides space into discrete rectangles. Two transactions 10 m apart on opposite sides of a cell boundary receive completely different encodings even though their location-based prices should be nearly identical. Expanding to 9 adjacent cells (`geo6_nbr_price`) softened but did not remove this discontinuity — the 3×3 patch still has hard boundaries.
+The problem is the **cell boundary discontinuity**. Geohash divides space into discrete rectangles. Two transactions 10 m apart on opposite sides of a cell boundary receive completely different encodings even though their location-based prices should be nearly identical. Expanding to 9 adjacent cells softened but did not remove this discontinuity.
 
 ### Why KD-Tree (v13+)
 
@@ -275,12 +300,12 @@ The problem is the **cell boundary discontinuity**. Geohash divides space into d
 
 1. Build a KD-tree from training-fold coordinates (Latitude, Longitude converted to metres).
 2. For each query point, find **all training transactions within r metres**.
-3. Compute the smoothed mean price of those neighbours.
+3. Compute the smoothed mean price (and mean price-per-sqm) of those neighbours.
 
 This gives a **fully continuous price surface** — no grid cells, no boundaries. A transaction at any location smoothly interpolates the prices of nearby training transactions.
 
 ```python
-# Built from training-fold coordinates only → leakage-free
+# Built from training-fold coordinates only → leakage-free for val/test
 tree = cKDTree(coords_train)
 
 # For each query point, radius search in O(n log n)
@@ -288,38 +313,43 @@ neighbours = tree.query_ball_point(query_coords, r=500, workers=-1)
 smoothed_mean = sigmoid_smooth(len(neighbours), mean(prices[neighbours]), global_mean)
 ```
 
-No external library required — `scipy` is already a dependency.
-
-Three spatial features are added per fold:
+Four spatial features are added per fold:
 
 | Feature | Radius | What it captures |
 | ------- | ------ | ---------------- |
-| `spatial_500m_te` | 500 m | Block-level price environment (~immediate neighbourhood) |
-| `spatial_2000m_te` | 2000 m | District-level price environment |
-| `spatial_500m_psm` | 500 m | Mean price-per-sqm within 500 m (size-normalised) |
+| `spatial_500m_te` | 500 m | Block-level mean price |
+| `spatial_2000m_te` | 2000 m | District-level mean price |
+| `spatial_500m_psm` | 500 m | Block-level mean price-per-sqm (size-normalised) |
+| `spatial_2000m_psm` | 2000 m | District-level mean price-per-sqm |
 
-All three are computed from training-fold data only — the same leakage-free discipline as target encoding.
+PSM (price per sqm) features add size-normalised context — a 3-room flat near expensive 5-room blocks benefits from a high neighbourhood mean even though its raw price is lower.
 
 ---
 
 ## Pipeline Versions
 
 | Version | Key change | Ensemble OOF RMSE | Kaggle RMSE |
-| ------- | ---------- | ----------------- | -------- |
+| ------- | ---------- | ----------------- | ----------- |
 | v1 | Baseline (80/20 split, LGB/XGB/CAT) | 21,220 | 22,067 |
-| v2 | 5-fold CV | 21,211 | 21,498
-| v3 | PCA-informed: dropped 5 redundant cols + `year_completed_x_floor_area` | 21,195 |
-| v4 | Target encoding for `town`/`planning_area` | 21,177 |
-| v5 | Added CBD distance, price trend, building age *(reverted — redundant)* | 21,195 |
-| v6 | 5-fold OOF stacking | 21,542 | 21,466 | 
-| v7 | CatBoost Optuna HPO (50 trials) | 21,525 |
-| v8 | CatBoost warm-start, depth ≤ 12 — confirmed convergence | 21,525 |
-| v9 | LightGBM + XGBoost Optuna HPO (50 trials each) | 21,459 |
-| v10 | Dual output: 80/20 + 5-fold OOF | 80/20: 21,105<br>5-fold: 21,456 | 80/20: 21,579<br> 5-Fold: 21,413
-| v11 | Leak-free target encoding (computed inside fold loop) | 21,461 |
-| v12 | Geohash spatial encoding (4 features) | 21,680 | 21,714
-| v13 | KD-tree replaces geohash (continuous, no boundary artefacts) | 21,456 | 21,396
-| **v14** | Dropped 29 low-importance features; 5-fold OOF only | **21,369** | **21,284** |
+| v2 | 5-fold CV | 21,211 | 21,498 |
+| v3 | PCA-informed: dropped 5 redundant cols | 21,195 | — |
+| v4 | Target encoding for `town`/`planning_area` | 21,177 | — |
+| v5 | Added CBD distance, price trend *(reverted)* | 21,195 | — |
+| v6 | 5-fold OOF stacking | 21,542 | 21,466 |
+| v7 | CatBoost Optuna HPO (50 trials) | 21,525 | — |
+| v8 | CatBoost warm-start depth ≤ 12 — confirmed convergence | 21,525 | — |
+| v9 | LightGBM + XGBoost Optuna HPO (50 trials each) | 21,459 | — |
+| v10 | Dual output: 80/20 + 5-fold OOF | 5-fold: 21,456 | 5-fold: 21,413 |
+| v11 | Leak-free target encoding (computed inside fold loop) | 21,461 | — |
+| v12 | Geohash spatial encoding (4 features) | 21,680 | 21,714 |
+| v13 | KD-tree replaces geohash | 21,456 | 21,396 |
+| v14 | Dropped 29 low-importance features; 5-fold OOF only | 21,369 | 21,284 |
+| v15 | Re-tuned all 3 models with 3-fold inner CV HPO | 21,334 | **21,243** |
+| v16 | Time-aware spatial encoding (24-month window) | 21,364 (worse) | — |
+| v17 | Postal-code target encoding (block-level) | 21,949 (worse) | — |
+| v18 | Added 1000 m spatial radius | 21,334 (no gain) | — |
+| v19 | Added `spatial_2000m_psm`; Re-tuned models with 3-fold inner CV HPO | 21,320 | — |
+| **v20** | Dropped all distance cols (redundant with log-transform distance) | **21,325** | **21,225** |
 
 ---
 
@@ -329,23 +359,23 @@ All three are computed from training-fold data only — the same leakage-free di
 
 | Strength | Detail |
 | -------- | ------ |
-| **High accuracy** | R² = 0.977, MAPE = 3.5% — predictions typically within SGD 21,000 of true price |
-| **Robust validation** | 5-fold OOF ensures every row is evaluated out-of-sample; no data is wasted |
-| **All models tuned** | Optuna TPE with 50 trials per model; warm-start confirms convergence |
-| **Leak-free encoding** | Target and spatial encoding stats computed from training-fold data only; test stats imputed from training distribution |
+| **High accuracy** | R² = 0.978, MAPE = 3.47%, MAE ≈ SGD 15,300 |
+| **Robust validation** | 5-fold OOF ensures every row is evaluated out-of-sample |
+| **All models tuned** | Optuna TPE with 50 trials per model, 3-fold inner CV |
+| **Leak-free val/test encoding** | Target and spatial encoding stats computed from training-fold data only |
 | **Continuous spatial features** | KD-tree radius search provides a smooth price surface with no grid-boundary discontinuities |
-| **Diverse ensemble** | Three different GBDT implementations with partially uncorrelated errors; Nelder-Mead finds optimal weights |
-| **Interpretable features** | All engineered features have clear domain meaning; no black-box transformations |
+| **Diverse ensemble** | Three different GBDT implementations; Nelder-Mead finds optimal weights |
+| **Interpretable features** | All engineered features have clear domain meaning |
 
 ### Cons
 
 | Limitation | Detail |
 | ---------- | ------ |
-| **No macro market signal** | HDB Resale Price Index (RPI) not incorporated; `tranc_period` is a coarse proxy for market cycle timing |
-| **HPO uses single inner split** | Optuna trials evaluated on one 80/20 split for speed; the best params are then validated on full 5-fold OOF, but the search itself has higher variance than a k-fold objective |
-| **Ensemble diversity ceiling** | All three models are GBDT variants; their errors are meaningfully but not deeply uncorrelated. A neural network (TabNet) or linear model would add more orthogonal signal but was not competitive at this dataset size |
-| **Hard cases remain** | Premium blocks (Pinnacle@Duxton, DBSS), niche flat types (multi-gen, studio), and extreme lease-age outliers sit in the residual RMSE and are unlikely to improve without additional features or data |
-| **Static model** | No retraining mechanism; predictions will drift as the market evolves beyond the training period |
+| **Train-fold self-leakage** | Target encoding and spatial encoding include each training row's own price in its own feature value. Impact is small (1/N contribution per row) but technically present; leave-one-out encoding would fully eliminate it |
+| **No macro market signal** | HDB Resale Price Index (RPI) not incorporated; `tranc_period` is a coarse proxy |
+| **Ensemble diversity ceiling** | All three models are GBDT variants; a neural network (TabNet) or linear model would add more orthogonal signal |
+| **Hard cases remain** | Premium blocks (Pinnacle@Duxton, DBSS), niche flat types (multi-gen, studio), and extreme lease-age outliers sit in the residual RMSE |
+| **Static model** | No retraining mechanism; predictions will drift as the market evolves |
 
 ---
 
@@ -360,24 +390,21 @@ HDB Kaggle/
 │   ├── 00-PCA-analysis.ipynb           ← feature group analysis, redundancy detection
 │   └── 00-prelimanary-analysis.ipynb
 ├── script/
-│   ├── hdb_ml_pipeline_v14.py          ← current version (use this)
-│   ├── hdb_ml_pipeline_v13.py          ← KD-tree spatial encoding
-│   ├── hdb_ml_pipeline_v12.py          ← geohash spatial (superseded)
-│   ├── hdb_ml_pipeline_v11.py          ← leak-free target encoding
-│   └── hdb_ml_pipeline_v1..v10.py      ← earlier iterations
+│   ├── hdb_ml_pipeline_v20.py          ← current version (use this)
+│   └── hdb_ml_pipeline_v1..v19.py      ← earlier iterations
 └── submission/
-    └── submission_v14_5fold.csv         ← latest (recommended)
+    └── submission_v20_5fold.csv         ← latest (recommended)
 ```
 
 ## Running the Pipeline
 
 ```bash
 cd script
-python hdb_ml_pipeline_v14.py
+python hdb_ml_pipeline_v20.py
 ```
 
 **Requirements:** `pandas numpy scikit-learn lightgbm xgboost catboost scipy optuna`
 
-**Runtime:** approximately 35–45 minutes on Apple M-series CPU (KD-tree radius search adds ~5 minutes per fold).
+**Runtime:** approximately 25–35 minutes on Apple M-series CPU (no HPO — params hardcoded from v19).
 
-The script outputs `submission_v14_5fold.csv` and prints a feature importance table averaged across all 5 folds.
+The script outputs `submission_v20_5fold.csv` and prints a full feature importance table (all features, sorted by mean gain across LGB / XGB / CAT) averaged across all 5 folds.
