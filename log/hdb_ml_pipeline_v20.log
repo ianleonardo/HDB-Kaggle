@@ -71,4 +71,10 @@ Final 5-fold OOF  (leak-free encoding per fold)
       CAT fold 2                              RMSE=    21,971  MAE=    15,515  MAPE=  3.52%  R²=0.9764
 
   Fold 3/5  train=120,507  val=30,127
+    Computing spatial encodings (KD-tree)... done
+      LGB fold 3                              RMSE=    21,335  MAE=    15,427  MAPE=  3.49%  R²=0.9779
+      XGB fold 3                              RMSE=    21,395  MAE=    15,435  MAPE=  3.49%  R²=0.9778
+      CAT fold 3                              RMSE=    21,373  MAE=    15,432  MAPE=  3.50%  R²=0.9778
+
+  Fold 4/5  train=120,507  val=30,127
     Computing spatial encodings (KD-tree)... 
