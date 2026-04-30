@@ -350,6 +350,7 @@ PSM (price per sqm) features add size-normalised context — a 3-room flat near 
 | v18 | Added 1000 m spatial radius | 21,334 (no gain) | — |
 | v19 | Added `spatial_2000m_psm`; Re-tuned models with 3-fold inner CV HPO | 21,320 | — |
 | **v20** | Dropped all distance cols (redundant with log-transform distance) | **21,325** | **21,225** |
+| v21 | Dropped target encoding and changed spatial radius from 2000 to 1000m | 21,317 | 21,240 |
 
 ---
 
@@ -374,7 +375,6 @@ PSM (price per sqm) features add size-normalised context — a 3-room flat near 
 | **Train-fold self-leakage** | Target encoding and spatial encoding include each training row's own price in its own feature value. Impact is small (1/N contribution per row) but technically present; leave-one-out encoding would fully eliminate it |
 | **No macro market signal** | HDB Resale Price Index (RPI) not incorporated; `tranc_period` is a coarse proxy |
 | **Ensemble diversity ceiling** | All three models are GBDT variants; a neural network (TabNet) or linear model would add more orthogonal signal |
-| **Hard cases remain** | Premium blocks (Pinnacle@Duxton, DBSS), niche flat types (multi-gen, studio), and extreme lease-age outliers sit in the residual RMSE |
 | **Static model** | No retraining mechanism; predictions will drift as the market evolves |
 
 ---
