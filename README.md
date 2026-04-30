@@ -36,7 +36,7 @@ GBDTs are the industry-standard choice for structured/tabular prediction problem
 | Captures non-linear interactions | Floor × lease remaining, storey ratio × area — trees find these automatically |
 | Native NaN handling | Several distance and school features have missing values |
 
-Neural networks were considered but ruled out: on tabular datasets of this size (~150k rows, ~60 features), GBDTs consistently outperform them in both accuracy and training speed.
+Neural networks were ruled out: on tabular datasets of this size (~150k rows, ~60 features), GBDTs consistently outperform them in both accuracy and training speed.
 
 ### Why These Three Specifically?
 
