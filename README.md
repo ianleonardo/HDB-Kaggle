@@ -48,6 +48,8 @@ All three are GBDT variants, but each uses different regularisation and tree-bui
 | **XGBoost** | Level-wise tree growth; strong L1/L2 regularisation; `gamma` controls split threshold |
 | **CatBoost** | Ordered boosting; native handling of categorical features; `bagging_temperature` controls randomisation |
 
+![Model Comparison](asset/lgm-xgb-cat.png)
+
 ---
 
 ## Ensemble Methodology
@@ -350,7 +352,7 @@ PSM (price per sqm) features add size-normalised context — a 3-room flat near 
 | v18 | Added 1000 m spatial radius | 21,334 (no gain) | — |
 | v19 | Added `spatial_2000m_psm`; Re-tuned models with 3-fold inner CV HPO | 21,320 | — |
 | **v20** | Dropped all distance cols (redundant with log-transform distance) | **21,325** | **21,225** |
-| v21 | Dropped target encoding and changed spatial radius from 2000 to 1000m | 21,317 | 21,240 |
+| v21 | Dropped target encoding and changed spatial radius from 2000 to 1500m | 21,317 | 21,240 |
 
 ---
 

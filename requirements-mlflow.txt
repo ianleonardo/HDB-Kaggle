@@ -1,0 +1,3 @@
+# Optional: MLflow experiment tracking for pipeline scripts (see script/mlflow.env.example).
+mlflow>=2.9.0
+skops>=0.9.0
