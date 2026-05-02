@@ -15,8 +15,11 @@ Changes vs v19
    Hawker_Nearest_Distance) dropped — log versions kept instead.
 """
 
-import pandas as pd
+import time
+
+import mlflow
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import KFold
 from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_score
 from sklearn.preprocessing import LabelEncoder
@@ -26,6 +29,9 @@ import lightgbm as lgb
 import xgboost as xgb
 import catboost as cb
 import warnings
+
+import mlflow_setup as mls
+
 warnings.filterwarnings('ignore')
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -63,11 +69,16 @@ ID_COL = 'id'
 # HELPERS
 # ══════════════════════════════════════════════════════════════════════════════
 
-def print_metrics(label, y_true, y_pred):
+def metrics(y_true, y_pred):
     rmse = root_mean_squared_error(y_true, y_pred)
-    mae  = mean_absolute_error(y_true, y_pred)
+    mae = mean_absolute_error(y_true, y_pred)
     mape = np.mean(np.abs((y_true - y_pred) / y_true)) * 100
-    r2   = r2_score(y_true, y_pred)
+    r2 = r2_score(y_true, y_pred)
+    return rmse, mae, mape, r2
+
+
+def print_metrics(label, y_true, y_pred):
+    rmse, mae, mape, r2 = metrics(y_true, y_pred)
     print(f"  {label:<42}  RMSE={rmse:>10,.0f}  MAE={mae:>10,.0f}  MAPE={mape:>6.2f}%  R²={r2:.4f}")
 
 
@@ -326,103 +337,173 @@ for k, v in BEST_CAT_PARAMS.items():
     print(f"    {k:<25} = {v}")
 
 # ══════════════════════════════════════════════════════════════════════════════
-# PHASE 2 — Final 5-fold OOF  (full leak-free pipeline from v14)
+# PHASE 2 — Final 5-fold OOF + MLflow (full leak-free pipeline from v14)
 # ══════════════════════════════════════════════════════════════════════════════
 
-print("\n" + "═"*65)
-print(f"Final {N_OOF_FOLDS}-fold OOF  (leak-free encoding per fold)")
-print("═"*65)
+mls.configure_mlflow()
 
-kf_oof = KFold(n_splits=N_OOF_FOLDS, shuffle=True, random_state=42)
+with mlflow.start_run(run_name="hdb_ml_pipeline_v20"):
+    mlflow.set_tags({
+        "script_version": "v20",
+        "pipeline": "hdb_ml_pipeline",
+        "cv_scheme": "5fold_oof_frozen_hyperparams",
+        "hyperparams_source": "v19_optuna_hardcoded",
+        "feature_importance_agg": "mean_gain_across_folds",
+    })
+    mlflow.log_params({
+        "n_samples": len(train_fe),
+        "n_base_features": len(BASE_FEATURES),
+        "n_cat_te_cols": len(TARGET_ENC_COLS),
+        "n_spatial_te_cols": len(SPATIAL_FEATS),
+        "n_low_imp_dropped": len(LOW_IMP_COLS),
+        "oof_folds": N_OOF_FOLDS,
+        "n_estimators_final_cap": N_EST_FINAL,
+    })
+    mls.log_params_json(BEST_LGB_PARAMS, artifact_filename="lgb_best_params.json")
+    mls.log_params_json(BEST_XGB_PARAMS, artifact_filename="xgb_best_params.json")
+    mls.log_params_json(BEST_CAT_PARAMS, artifact_filename="cat_best_params.json")
 
-oof_lgb = np.zeros(len(train_fe))
-oof_xgb = np.zeros(len(train_fe))
-oof_cat = np.zeros(len(train_fe))
+    pipeline_t0 = time.perf_counter()
 
-pred_lgb = np.zeros(len(test_fe))
-pred_xgb = np.zeros(len(test_fe))
-pred_cat = np.zeros(len(test_fe))
+    print("\n" + "═"*65)
+    print(f"Final {N_OOF_FOLDS}-fold OOF  (leak-free encoding per fold)")
+    print("═"*65)
 
-imp_lgb_folds = []
-imp_xgb_folds = []
-imp_cat_folds = []
-feature_names = None
+    sec_lgb = sec_xgb = sec_cat = 0.0
+    kf_oof = KFold(n_splits=N_OOF_FOLDS, shuffle=True, random_state=42)
 
-X_test_base = test_fe[BASE_FEATURES]
+    oof_lgb = np.zeros(len(train_fe))
+    oof_xgb = np.zeros(len(train_fe))
+    oof_cat = np.zeros(len(train_fe))
 
-for fold, (tr_idx, val_idx) in enumerate(kf_oof.split(np.arange(len(train_fe))), 1):
-    print(f"\n  Fold {fold}/{N_OOF_FOLDS}  train={len(tr_idx):,}  val={len(val_idx):,}")
+    pred_lgb = np.zeros(len(test_fe))
+    pred_xgb = np.zeros(len(test_fe))
+    pred_cat = np.zeros(len(test_fe))
 
-    df_tr_f  = train_fe.iloc[tr_idx]
-    df_val_f = train_fe.iloc[val_idx]
+    imp_lgb_folds = []
+    imp_xgb_folds = []
+    imp_cat_folds = []
+    feature_names = None
 
-    tr_enc, val_enc, te_enc = target_encode_fold(
-        df_tr=df_tr_f, df_val=df_val_f, df_te=test_fe,
-        cols=TARGET_ENC_COLS, target_col=TARGET,
+    X_test_base = test_fe[BASE_FEATURES]
+
+    for fold, (tr_idx, val_idx) in enumerate(kf_oof.split(np.arange(len(train_fe))), 1):
+        print(f"\n  Fold {fold}/{N_OOF_FOLDS}  train={len(tr_idx):,}  val={len(val_idx):,}")
+
+        df_tr_f = train_fe.iloc[tr_idx]
+        df_val_f = train_fe.iloc[val_idx]
+
+        tr_enc, val_enc, te_enc = target_encode_fold(
+            df_tr=df_tr_f, df_val=df_val_f, df_te=test_fe,
+            cols=TARGET_ENC_COLS, target_col=TARGET,
+        )
+
+        print(f"    Computing spatial encodings (KD-tree)...", end=' ', flush=True)
+        sp_tr, sp_val, sp_te = spatial_radius_encode_fold(
+            df_tr=df_tr_f, df_val=df_val_f, df_te=test_fe, target_col=TARGET,
+        )
+        print("done")
+
+        tr_enc = {**tr_enc, **sp_tr}
+        val_enc = {**val_enc, **sp_val}
+        te_enc = {**te_enc, **sp_te}
+
+        X_tr = attach_encodings(df_tr_f[BASE_FEATURES], tr_enc)
+        X_val = attach_encodings(df_val_f[BASE_FEATURES], val_enc)
+        X_te = attach_encodings(X_test_base, te_enc)
+
+        if feature_names is None:
+            feature_names = list(X_tr.columns)
+            mls.log_features_json(feature_names)
+
+        y_tr = y.iloc[tr_idx].reset_index(drop=True)
+        y_val = y.iloc[val_idx].reset_index(drop=True)
+
+        t0 = time.perf_counter()
+        m_lgb = fit_lgb(X_tr, y_tr, X_val, y_val, BEST_LGB_PARAMS, N_EST_FINAL)
+        sec_lgb += time.perf_counter() - t0
+        oof_lgb[val_idx] = m_lgb.predict(X_val)
+        pred_lgb += m_lgb.predict(X_te) / N_OOF_FOLDS
+        imp_lgb_folds.append(m_lgb.booster_.feature_importance(importance_type='gain'))
+        print_metrics(f"    LGB fold {fold}", y_val, oof_lgb[val_idx])
+
+        t0 = time.perf_counter()
+        m_xgb = fit_xgb(X_tr, y_tr, X_val, y_val, BEST_XGB_PARAMS, N_EST_FINAL)
+        sec_xgb += time.perf_counter() - t0
+        oof_xgb[val_idx] = m_xgb.predict(X_val)
+        pred_xgb += m_xgb.predict(X_te) / N_OOF_FOLDS
+        xgb_scores = m_xgb.get_booster().get_score(importance_type='gain')
+        imp_xgb_folds.append([xgb_scores.get(f, 0.0) for f in feature_names])
+        print_metrics(f"    XGB fold {fold}", y_val, oof_xgb[val_idx])
+
+        t0 = time.perf_counter()
+        m_cat = fit_cat(X_tr, y_tr, X_val, y_val, BEST_CAT_PARAMS, N_EST_FINAL)
+        sec_cat += time.perf_counter() - t0
+        oof_cat[val_idx] = m_cat.predict(X_val)
+        pred_cat += m_cat.predict(X_te) / N_OOF_FOLDS
+        imp_cat_folds.append(m_cat.get_feature_importance())
+        print_metrics(f"    CAT fold {fold}", y_val, oof_cat[val_idx])
+
+    ensemble_t0 = time.perf_counter()
+    w = optimise_weights(y, oof_lgb, oof_xgb, oof_cat)
+    mlflow.log_metric("ensemble_optimize_seconds", time.perf_counter() - ensemble_t0)
+
+    oof_blend = w[0]*oof_lgb + w[1]*oof_xgb + w[2]*oof_cat
+
+    erm, emae, emape, er2 = metrics(y, oof_blend)
+    mlflow.log_metrics({
+        "oof_ensemble_rmse": erm,
+        "oof_ensemble_mae": emae,
+        "oof_ensemble_mape": emape,
+        "oof_ensemble_r2": er2,
+        "oof_rmse_lightgbm": metrics(y, oof_lgb)[0],
+        "oof_rmse_xgboost": metrics(y, oof_xgb)[0],
+        "oof_rmse_catboost": metrics(y, oof_cat)[0],
+        "oof_training_seconds": time.perf_counter() - pipeline_t0,
+    })
+    mlflow.log_param("ensemble_weight_lgb", float(w[0]))
+    mlflow.log_param("ensemble_weight_xgb", float(w[1]))
+    mlflow.log_param("ensemble_weight_cat", float(w[2]))
+
+    imp_lgb_mean = np.array(imp_lgb_folds).mean(axis=0)
+    imp_xgb_mean = np.array(imp_xgb_folds).mean(axis=0)
+    imp_cat_mean = np.array(imp_cat_folds).mean(axis=0)
+
+    mls.log_nested_oof_gbdt_triplet(
+        y_true=y,
+        oof_lgb=oof_lgb,
+        oof_xgb=oof_xgb,
+        oof_cat=oof_cat,
+        lgb_params=BEST_LGB_PARAMS,
+        xgb_params=BEST_XGB_PARAMS,
+        cat_params=BEST_CAT_PARAMS,
+        m_lgb_last=m_lgb,
+        m_xgb_last=m_xgb,
+        m_cat_last=m_cat,
+        features=feature_names,
+        train_seconds=(sec_lgb, sec_xgb, sec_cat),
+        metrics_fn=metrics,
+        importance_lgb=imp_lgb_mean,
+        importance_xgb=imp_xgb_mean,
+        importance_cat=imp_cat_mean,
     )
 
-    print(f"    Computing spatial encodings (KD-tree)...", end=' ', flush=True)
-    sp_tr, sp_val, sp_te = spatial_radius_encode_fold(
-        df_tr=df_tr_f, df_val=df_val_f, df_te=test_fe, target_col=TARGET,
-    )
-    print("done")
+    V19_OOF_RMSE = 21_320
 
-    tr_enc  = {**tr_enc,  **sp_tr}
-    val_enc = {**val_enc, **sp_val}
-    te_enc  = {**te_enc,  **sp_te}
+    print("\n" + "═"*65)
+    print("Final Summary")
+    print("═"*65)
+    print_metrics("LightGBM  (OOF)", y, oof_lgb)
+    print_metrics("XGBoost   (OOF)", y, oof_xgb)
+    print_metrics("CatBoost  (OOF)", y, oof_cat)
+    print_metrics(f"Ensemble  (L={w[0]:.2f} X={w[1]:.2f} C={w[2]:.2f})", y, oof_blend)
 
-    X_tr  = attach_encodings(df_tr_f[BASE_FEATURES],  tr_enc)
-    X_val = attach_encodings(df_val_f[BASE_FEATURES], val_enc)
-    X_te  = attach_encodings(X_test_base,             te_enc)
-
-    if feature_names is None:
-        feature_names = list(X_tr.columns)
-
-    y_tr  = y.iloc[tr_idx].reset_index(drop=True)
-    y_val = y.iloc[val_idx].reset_index(drop=True)
-
-    m_lgb = fit_lgb(X_tr, y_tr, X_val, y_val, BEST_LGB_PARAMS, N_EST_FINAL)
-    oof_lgb[val_idx] = m_lgb.predict(X_val)
-    pred_lgb        += m_lgb.predict(X_te) / N_OOF_FOLDS
-    imp_lgb_folds.append(m_lgb.booster_.feature_importance(importance_type='gain'))
-    print_metrics(f"    LGB fold {fold}", y_val, oof_lgb[val_idx])
-
-    m_xgb = fit_xgb(X_tr, y_tr, X_val, y_val, BEST_XGB_PARAMS, N_EST_FINAL)
-    oof_xgb[val_idx] = m_xgb.predict(X_val)
-    pred_xgb        += m_xgb.predict(X_te) / N_OOF_FOLDS
-    xgb_scores = m_xgb.get_booster().get_score(importance_type='gain')
-    imp_xgb_folds.append([xgb_scores.get(f, 0.0) for f in feature_names])
-    print_metrics(f"    XGB fold {fold}", y_val, oof_xgb[val_idx])
-
-    m_cat = fit_cat(X_tr, y_tr, X_val, y_val, BEST_CAT_PARAMS, N_EST_FINAL)
-    oof_cat[val_idx] = m_cat.predict(X_val)
-    pred_cat        += m_cat.predict(X_te) / N_OOF_FOLDS
-    imp_cat_folds.append(m_cat.get_feature_importance())
-    print_metrics(f"    CAT fold {fold}", y_val, oof_cat[val_idx])
-
-w         = optimise_weights(y, oof_lgb, oof_xgb, oof_cat)
-oof_blend = w[0]*oof_lgb + w[1]*oof_xgb + w[2]*oof_cat
-
-# ══════════════════════════════════════════════════════════════════════════════
-# FINAL SUMMARY
-# ══════════════════════════════════════════════════════════════════════════════
-
-V19_OOF_RMSE = 21_320
-
-print("\n" + "═"*65)
-print("Final Summary")
-print("═"*65)
-print_metrics("LightGBM  (OOF)", y, oof_lgb)
-print_metrics("XGBoost   (OOF)", y, oof_xgb)
-print_metrics("CatBoost  (OOF)", y, oof_cat)
-print_metrics(f"Ensemble  (L={w[0]:.2f} X={w[1]:.2f} C={w[2]:.2f})", y, oof_blend)
-
-v20_rmse = root_mean_squared_error(y, oof_blend)
-delta    = V19_OOF_RMSE - v20_rmse
-print(f"\n  v19 ensemble OOF RMSE : {V19_OOF_RMSE:,}")
-print(f"  v20 ensemble OOF RMSE : {v20_rmse:,.0f}  "
-      f"({'↓ improved by ' + f'{delta:,.0f}' if delta > 0 else '↑ regressed by ' + f'{abs(delta):,.0f}'})")
-print("═"*65)
+    v20_rmse = root_mean_squared_error(y, oof_blend)
+    delta = V19_OOF_RMSE - v20_rmse
+    print(f"\n  v19 ensemble OOF RMSE : {V19_OOF_RMSE:,}")
+    print(f"  v20 ensemble OOF RMSE : {v20_rmse:,.0f}  "
+          f"({'↓ improved by ' + f'{delta:,.0f}' if delta > 0 else '↑ regressed by ' + f'{abs(delta):,.0f}'})")
+    print("═"*65)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SUBMISSION
